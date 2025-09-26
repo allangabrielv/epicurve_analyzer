@@ -16,17 +16,7 @@ from scipy import stats
 
 # Função de otimização de janela temporal removida conforme solicitação do usuário
 
-def limpar_outliers(x, y, iqr_factor=1.5):
-    """Remove outliers usando método IQR"""
-    Q1 = np.percentile(y, 25)
-    Q3 = np.percentile(y, 75)
-    IQR = Q3 - Q1
-    lower_bound = Q1 - iqr_factor * IQR
-    upper_bound = Q3 + iqr_factor * IQR
-    
-    # Manter valores não-negativos e dentro dos bounds
-    mask_outliers = (y >= max(0, lower_bound)) & (y <= upper_bound)
-    return x[mask_outliers], y[mask_outliers], np.sum(~mask_outliers)
+# Função limpar_outliers removida conforme solicitação do usuário
 
 def suavizar_dados(y, janela=3):
     """Aplica suavização por média móvel"""
@@ -96,27 +86,28 @@ def interpretar_metricas(r2):
     else:
         return 'Muito Fraco (<0.3)', '⚫'
 
-def modelo_ensemble(x, y, modelos_dict, pesos=None):
-    """Combina múltiplos modelos por ensemble"""
-    if pesos is None:
-        pesos = [1/len(modelos_dict)] * len(modelos_dict)
-    
-    y_ensemble = np.zeros_like(y, dtype=float)
-    peso_total = 0
-    
-    for i, (nome, modelo_info) in enumerate(modelos_dict.items()):
-        if modelo_info['r2'] > 0.1:  # Só incluir modelos minimamente úteis
-            y_pred = modelo_info['y_pred']
-            peso = pesos[i] * modelo_info['r2']  # Peso proporcional ao R²
-            y_ensemble += peso * y_pred
-            peso_total += peso
-    
-    if peso_total > 0:
-        y_ensemble /= peso_total
-    else:
-        y_ensemble = y  # Fallback para dados originais
-    
-    return y_ensemble
+# FUNÇÃO MODELO_ENSEMBLE - DESATIVADA (causava relatórios estranhos)
+# def modelo_ensemble(x, y, modelos_dict, pesos=None):
+#     """Combina múltiplos modelos por ensemble"""
+#     if pesos is None:
+#         pesos = [1/len(modelos_dict)] * len(modelos_dict)
+#     
+#     y_ensemble = np.zeros_like(y, dtype=float)
+#     peso_total = 0
+#     
+#     for i, (nome, modelo_info) in enumerate(modelos_dict.items()):
+#         if modelo_info['r2'] > 0.1:  # Só incluir modelos minimamente úteis
+#             y_pred = modelo_info['y_pred']
+#             peso = pesos[i] * modelo_info['r2']  # Peso proporcional ao R²
+#             y_ensemble += peso * y_pred
+#             peso_total += peso
+#     
+#     if peso_total > 0:
+#         y_ensemble /= peso_total
+#     else:
+#         y_ensemble = y  # Fallback para dados originais
+#     
+#     return y_ensemble
 
 print("="*60)
 print("    EPICURVE ANALYZER - MODELAGEM EPIDEMIOLÓGICA")
@@ -158,11 +149,11 @@ print(f"Casos diários originais: {y_raw.min():.0f} a {y_raw.max():.0f}")
 print("\n🔧 APLICANDO OTIMIZAÇÕES TÉCNICAS...")
 print("-" * 50)
 
-# 1. Limpeza de outliers
-x_clean, y_clean, outliers_removidos = limpar_outliers(x_raw, y_raw)
-print(f"📊 Outliers removidos: {outliers_removidos} ({outliers_removidos/len(y_raw)*100:.1f}%)")
+# 1. Usar dados brutos sem limpeza de outliers
+x_clean, y_clean = x_raw, y_raw
+print("📊 Usando dados brutos (limpeza de outliers removida)")
 
-# 2. Usar todos os dados limpos (otimização de janela temporal removida)
+# 2. Usar todos os dados disponíveis (otimização de janela temporal removida)
 x_otimo = x_clean
 y_otimo = y_clean
 print(f"📊 Usando todos os dados disponíveis: {len(x_clean)} dias")
@@ -338,21 +329,21 @@ for nome, dados in modelos_completos.items():
     status, emoji = interpretar_metricas(m['R²'])
     print(f"{nome:<18} {m['R²']:<7.3f} {m['R²_ajustado']:<7.3f} {m['RMSE']:<8.2f} {m['MAE']:<8.2f} {m['MAPE']:<8.1f}% {m['Nash_Sutcliffe']:<7.3f} {m['Willmott']:<7.3f} {emoji} {status.split(' ')[0]:<10}")
 
-# Modelo Ensemble
-if len(modelos_completos) > 1:
-    print("\n🔬 TESTANDO MODELO ENSEMBLE...")
-    modelos_para_ensemble = {nome: {'r2': dados['r2'], 'y_pred': dados['y_pred']} 
-                            for nome, dados in modelos_completos.items()}
-    y_ensemble = modelo_ensemble(x, y, modelos_para_ensemble)
-    metricas_ensemble = metricas_avancadas(y, y_ensemble)
-    
-    print(f"{'Ensemble':<18} {metricas_ensemble['R²']:<7.3f} {metricas_ensemble['R²_ajustado']:<7.3f} {metricas_ensemble['RMSE']:<8.2f} {metricas_ensemble['MAE']:<8.2f} {metricas_ensemble['MAPE']:<8.1f}% {metricas_ensemble['Nash_Sutcliffe']:<7.3f} {metricas_ensemble['Willmott']:<7.3f} ⭐ Híbrido")
-    
-    modelos_completos['Ensemble'] = {
-        'y_pred': y_ensemble,
-        'metricas': metricas_ensemble,
-        'r2': metricas_ensemble['R²']
-    }
+# Modelo Ensemble - DESATIVADO (causava relatórios estranhos)
+# if len(modelos_completos) > 1:
+#     print("\n🔬 TESTANDO MODELO ENSEMBLE...")
+#     modelos_para_ensemble = {nome: {'r2': dados['r2'], 'y_pred': dados['y_pred']} 
+#                             for nome, dados in modelos_completos.items()}
+#     y_ensemble = modelo_ensemble(x, y, modelos_para_ensemble)
+#     metricas_ensemble = metricas_avancadas(y, y_ensemble)
+#     
+#     print(f"{'Ensemble':<18} {metricas_ensemble['R²']:<7.3f} {metricas_ensemble['R²_ajustado']:<7.3f} {metricas_ensemble['RMSE']:<8.2f} {metricas_ensemble['MAE']:<8.2f} {metricas_ensemble['MAPE']:<8.1f}% {metricas_ensemble['Nash_Sutcliffe']:<7.3f} {metricas_ensemble['Willmott']:<7.3f} ⭐ Híbrido")
+#     
+#     modelos_completos['Ensemble'] = {
+#         'y_pred': y_ensemble,
+#         'metricas': metricas_ensemble,
+#         'r2': metricas_ensemble['R²']
+#     }
 
 print("=" * 95)
 
@@ -444,15 +435,16 @@ melhor_metricas_data = modelos_completos.get(melhor_modelo[0], {})
 melhor_metricas = melhor_metricas_data.get('metricas', {})
 melhor_metricas_precision = metricas_precisao.get(melhor_modelo[0], {})
 
-# 6. VISUALIZAÇÃO COMPARATIVA
+# VISUALIZAÇÃO COMPARATIVA
 plt.figure(figsize=(15, 10))
 
 # Gráfico 1: Dados originais
 plt.subplot(2, 2, 1)
-plt.plot(x, y, 'bo-', markersize=2, alpha=0.6, label='Dados originais')
+plt.plot(x, y, 'bo-', markersize=3, alpha=0.6, label='Dados originais')
 plt.xlabel('Ordem Temporal')
 plt.ylabel('Novos Casos Confirmados')
 plt.title(f'Dados Epidemiológicos - {cidade_selecionada}')
+plt.ylim(0, y.max() * 1.2)
 plt.grid(True, alpha=0.3)
 plt.legend()
 
@@ -474,6 +466,7 @@ if r2_exp > 0:
 plt.xlabel('Ordem Temporal')
 plt.ylabel('Novos Casos')
 plt.title('Modelos Linear e Exponencial')
+plt.ylim(0, y.max() * 1.2)
 plt.legend()
 plt.grid(True, alpha=0.3)
 
@@ -490,6 +483,7 @@ for i, grau in enumerate(graus):
 plt.xlabel('Ordem Temporal')
 plt.ylabel('Novos Casos')
 plt.title('Modelos Polinomiais')
+plt.ylim(0, y.max() * 1.2)
 plt.legend()
 plt.grid(True, alpha=0.3)
 
@@ -512,6 +506,7 @@ plt.plot(x_plot, y_melhor, 'red', linewidth=3,
 plt.xlabel('Ordem Temporal')
 plt.ylabel('Novos Casos')
 plt.title('Melhor Modelo Identificado')
+plt.ylim(0, y.max() * 1.2)
 plt.legend()
 plt.grid(True, alpha=0.3)
 
@@ -522,7 +517,7 @@ plt.show()
 plt.figure(figsize=(15, 8))
 
 # Dados históricos
-plt.scatter(x, y, alpha=0.6, color='blue', label=f'Dados Históricos - {cidade_selecionada}', s=30)
+plt.scatter(x, y, alpha=0.6, color='blue', label=f'Dados Históricos - {cidade_selecionada}', s=20)
 
 # Modelo atual nos dados históricos
 if melhor_modelo[0] == 'Linear':
@@ -541,7 +536,7 @@ elif 'Polinômio' in melhor_modelo[0]:
     plt.plot(x_futuro, pred_futuro, 'r--', linewidth=3, label=f'Projeção 14 dias', alpha=0.8)
 
 # Projeções como pontos
-plt.scatter(x_futuro, pred_futuro, color='red', s=50, alpha=0.7, marker='^', label='Predições Futuras')
+plt.scatter(x_futuro, pred_futuro, color='red', s=20, alpha=0.7, marker='^', label='Predições Futuras')
 
 # Linha vertical separando histórico de projeção
 plt.axvline(x=x.max(), color='orange', linestyle=':', linewidth=2, alpha=0.7, label='Limite Atual')
@@ -555,6 +550,8 @@ if len(pred_futuro) > 0:
 plt.xlabel('Ordem Temporal')
 plt.ylabel('Novos Casos Confirmados')
 plt.title(f'EpiCurve Analyzer: Predições para {cidade_selecionada}\nTransformando Dados em Decisões Rápidas')
+max_y = max(y.max(), max(pred_futuro) if len(pred_futuro) > 0 else y.max())
+plt.ylim(0, max_y * 1.2)
 plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
