@@ -120,13 +120,41 @@ print("-" * 40)
 
 df = pd.read_csv('caso_full.csv.gz')
 
-# Filtrar dados de uma cidade específica para análise temporal
-# Exemplo: São Paulo (maior dataset)
-cidades_principais = df['city'].value_counts().head(10)
-print(f"Cidades com mais registros: {list(cidades_principais.index)}")
+# CORREÇÃO: Combinar cidade + estado para evitar confusão entre cidades homônimas
+# Criar identificador único: "Cidade - Estado"
+df['cidade_estado'] = df['city'] + ' - ' + df['state']
 
+# Filtrar apenas registros válidos (remover "Importados/Indefinidos" e dados incompletos)
+df_valido = df[(df['city'] != 'Importados/Indefinidos') & 
+               (df['city'].notna()) & 
+               (df['state'].notna()) & 
+               (df['new_confirmed'].notna())].copy()
+
+# Obter cidades principais por registros (agora corrigido)
+cidades_principais = df_valido['cidade_estado'].value_counts().head(15)
+print(f"\n⚠️  CORREÇÃO APLICADA: Usando 'Cidade - Estado' para evitar duplicação")
+print(f"Cidades com mais registros (corrigido):")
+for i, (cidade_estado, count) in enumerate(cidades_principais.head(10).items(), 1):
+    print(f"  {i:2d}. {cidade_estado}: {count} registros")
+
+print(f"\nEscolha uma cidade da lista acima (use formato: Cidade - Estado)")
 cidade_selecionada = input("Escolha uma cidade para análise: ") or cidades_principais.index[0]
-df_cidade = df[df['city'] == cidade_selecionada].copy()
+df_cidade = df_valido[df_valido['cidade_estado'] == cidade_selecionada].copy()
+
+if len(df_cidade) == 0:
+    print(f"❌ Cidade '{cidade_selecionada}' não encontrada!")
+    print("Usando a cidade com mais registros...")
+    cidade_selecionada = cidades_principais.index[0]
+    df_cidade = df_valido[df_valido['cidade_estado'] == cidade_selecionada].copy()
+
+print(f"\n✅ Analisando: {cidade_selecionada}")
+print(f"📊 Total de registros: {len(df_cidade)}")
+if len(df_cidade) > 0:
+    estado = df_cidade['state'].iloc[0]
+    cidade = df_cidade['city'].iloc[0]
+    pop = df_cidade['estimated_population'].iloc[0]
+    print(f"📍 Estado: {estado}")
+    print(f"👥 População estimada: {pop:,.0f}" if not pd.isna(pop) else "👥 População: N/A")
 
 # Converter data e ordenar
 df_cidade['date'] = pd.to_datetime(df_cidade['date'])
