@@ -2,10 +2,121 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.stats import linregress
+from scipy.ndimage import uniform_filter1d
+from sklearn.linear_model import Ridge
+from sklearn.preprocessing import PolynomialFeatures
+from scipy import stats
 
 # ==========================================
 # EPICURVE ANALYZER - PROJETO NUMBIOSIS
 # ==========================================
+
+# FUNÇÕES DE OTIMIZAÇÃO E MELHORIAS TÉCNICAS
+# ==========================================
+
+# Função de otimização de janela temporal removida conforme solicitação do usuário
+
+def limpar_outliers(x, y, iqr_factor=1.5):
+    """Remove outliers usando método IQR"""
+    Q1 = np.percentile(y, 25)
+    Q3 = np.percentile(y, 75)
+    IQR = Q3 - Q1
+    lower_bound = Q1 - iqr_factor * IQR
+    upper_bound = Q3 + iqr_factor * IQR
+    
+    # Manter valores não-negativos e dentro dos bounds
+    mask_outliers = (y >= max(0, lower_bound)) & (y <= upper_bound)
+    return x[mask_outliers], y[mask_outliers], np.sum(~mask_outliers)
+
+def suavizar_dados(y, janela=3):
+    """Aplica suavização por média móvel"""
+    if len(y) < janela:
+        return y
+    return uniform_filter1d(y.astype(float), size=janela)
+
+def ajuste_polinomial_regularizado(x, y, grau, alpha=1.0):
+    """Ajuste polinomial com regularização Ridge"""
+    try:
+        poly_features = PolynomialFeatures(degree=grau, include_bias=True)
+        x_poly = poly_features.fit_transform(x.reshape(-1, 1))
+        
+        ridge = Ridge(alpha=alpha)
+        ridge.fit(x_poly, y)
+        
+        y_pred = ridge.predict(x_poly)
+        r2 = ridge.score(x_poly, y)
+        
+        return ridge, r2, y_pred, poly_features
+    except:
+        return None, 0, np.zeros_like(y), None
+
+def metricas_avancadas(y_real, y_pred):
+    """Calcula métricas de precisão avançadas"""
+    # Evitar divisão por zero
+    y_real = np.array(y_real, dtype=float)
+    y_pred = np.array(y_pred, dtype=float)
+    
+    # Métricas básicas
+    rmse = np.sqrt(np.mean((y_real - y_pred) ** 2))
+    mae = np.mean(np.abs(y_real - y_pred))
+    mape = np.mean(np.abs((y_real - y_pred) / np.maximum(y_real, 1e-8))) * 100
+    
+    # R² padrão
+    ss_res = np.sum((y_real - y_pred) ** 2)
+    ss_tot = np.sum((y_real - np.mean(y_real)) ** 2)
+    r2 = 1 - (ss_res / ss_tot) if ss_tot > 0 else 0
+    
+    # R² ajustado
+    n = len(y_real)
+    p = 1  # número de parâmetros
+    r2_adj = 1 - (1 - r2) * (n - 1) / (n - p - 1) if n > p + 1 else r2
+    
+    # Coeficiente de eficiência de Nash-Sutcliffe
+    nse = 1 - ss_res / ss_tot if ss_tot > 0 else 0
+    
+    # Índice de concordância de Willmott
+    denominator = np.sum((np.abs(y_pred - np.mean(y_real)) + np.abs(y_real - np.mean(y_real)))**2)
+    d = 1 - ss_res / denominator if denominator > 0 else 0
+    
+    return {
+        'RMSE': rmse, 'MAE': mae, 'MAPE': mape, 'R²': r2,
+        'R²_ajustado': r2_adj, 'Nash_Sutcliffe': nse, 'Willmott': d
+    }
+
+def interpretar_metricas(r2):
+    """Interpreta as métricas no contexto epidemiológico"""
+    if r2 > 0.9:
+        return 'Excelente (>0.9)', '🟢'
+    elif r2 > 0.7:
+        return 'Bom (0.7-0.9)', '🟡'
+    elif r2 > 0.5:
+        return 'Moderado (0.5-0.7)', '🟠'
+    elif r2 > 0.3:
+        return 'Fraco (0.3-0.5)', '🔴'
+    else:
+        return 'Muito Fraco (<0.3)', '⚫'
+
+def modelo_ensemble(x, y, modelos_dict, pesos=None):
+    """Combina múltiplos modelos por ensemble"""
+    if pesos is None:
+        pesos = [1/len(modelos_dict)] * len(modelos_dict)
+    
+    y_ensemble = np.zeros_like(y, dtype=float)
+    peso_total = 0
+    
+    for i, (nome, modelo_info) in enumerate(modelos_dict.items()):
+        if modelo_info['r2'] > 0.1:  # Só incluir modelos minimamente úteis
+            y_pred = modelo_info['y_pred']
+            peso = pesos[i] * modelo_info['r2']  # Peso proporcional ao R²
+            y_ensemble += peso * y_pred
+            peso_total += peso
+    
+    if peso_total > 0:
+        y_ensemble /= peso_total
+    else:
+        y_ensemble = y  # Fallback para dados originais
+    
+    return y_ensemble
 
 print("="*60)
 print("    EPICURVE ANALYZER - MODELAGEM EPIDEMIOLÓGICA")
@@ -31,17 +142,48 @@ df_cidade['date'] = pd.to_datetime(df_cidade['date'])
 df_cidade = df_cidade.sort_values('date')
 
 # Preparar variáveis para modelagem
-x = df_cidade['order_for_place'].values  # Tempo (ordem temporal)
-y = df_cidade['new_confirmed'].values    # Casos diários
+x_original = df_cidade['order_for_place'].values  # Tempo (ordem temporal)
+y_original = df_cidade['new_confirmed'].values    # Casos diários
 
 # Filtrar dados válidos (remover valores negativos e zeros para exp)
-mask = (y > 0) & ~np.isnan(x) & ~np.isnan(y)
-x = x[mask]
-y = y[mask]
+mask = (y_original > 0) & ~np.isnan(x_original) & ~np.isnan(y_original)
+x_raw = x_original[mask]
+y_raw = y_original[mask]
 
 print(f"Cidade analisada: {cidade_selecionada}")
-print(f"Período: {len(x)} dias de dados")
-print(f"Casos diários: {y.min():.0f} a {y.max():.0f}")
+print(f"Período original: {len(x_raw)} dias de dados")
+print(f"Casos diários originais: {y_raw.min():.0f} a {y_raw.max():.0f}")
+
+# APLICAR OTIMIZAÇÕES
+print("\n🔧 APLICANDO OTIMIZAÇÕES TÉCNICAS...")
+print("-" * 50)
+
+# 1. Limpeza de outliers
+x_clean, y_clean, outliers_removidos = limpar_outliers(x_raw, y_raw)
+print(f"📊 Outliers removidos: {outliers_removidos} ({outliers_removidos/len(y_raw)*100:.1f}%)")
+
+# 2. Usar todos os dados limpos (otimização de janela temporal removida)
+x_otimo = x_clean
+y_otimo = y_clean
+print(f"📊 Usando todos os dados disponíveis: {len(x_clean)} dias")
+
+# 3. Suavização se necessário
+coef_variacao = np.std(y_otimo) / np.mean(y_otimo) if np.mean(y_otimo) > 0 else 0
+if coef_variacao > 1.0:  # Alta variabilidade
+    y_suave = suavizar_dados(y_otimo, janela=3)
+    print(f"🔄 Suavização aplicada (CV = {coef_variacao:.2f})")
+else:
+    y_suave = y_otimo
+    print(f"🔄 Suavização não necessária (CV = {coef_variacao:.2f})")
+
+# Usar dados otimizados para análise
+x = x_otimo
+y = y_suave
+
+print(f"\n✅ DADOS OTIMIZADOS FINAIS:")
+print(f"   Período analisado: {len(x)} dias")
+print(f"   Casos diários: {y.min():.1f} a {y.max():.1f}")
+print(f"   Média: {y.mean():.1f} ± {y.std():.1f}")
 
 # 2. REGRESSÃO LINEAR (MATERIAL DO PROFESSOR)
 print("\n2. REGRESSÃO LINEAR (Tendência Linear)")
@@ -89,35 +231,50 @@ else:
     A, k = 0, 0
     print("❌ Dados insuficientes para ajuste exponencial")
 
-# 4. AJUSTES POLINOMIAIS (MATERIAL DO PROFESSOR)
-print("\n4. AJUSTES POLINOMIAIS (Curva Epidêmica)")
-print("-" * 40)
+# 4. AJUSTES POLINOMIAIS REGULARIZADOS
+print("\n4. AJUSTES POLINOMIAIS REGULARIZADOS")
+print("-" * 45)
 
 graus = [2, 3, 4, 5]
 modelos_poly = {}
 r2_poly = {}
+modelos_ridge = {}  # Para armazenar modelos Ridge
 
 for grau in graus:
-    coef = np.polyfit(x, y, grau)
-    y_pred = np.polyval(coef, x)
-    
-    # Calcular R²
-    ss_res = np.sum((y - y_pred) ** 2)
-    ss_tot = np.sum((y - np.mean(y)) ** 2)
-    r2 = 1 - (ss_res / ss_tot)
-    
-    modelos_poly[grau] = coef
-    r2_poly[grau] = r2
-    
-    print(f"Polinômio grau {grau}: R² = {r2:.4f}")
-    
-    # Interpretação especial para grau 2 (parábola)
-    if grau == 2:
-        a, b, c = coef
-        if a < 0:  # Parábola com concavidade para baixo
-            x_pico = -b / (2 * a)
-            y_pico = np.polyval(coef, x_pico)
-            print(f"   📊 Pico estimado: dia {x_pico:.0f}, {y_pico:.0f} casos")
+    # Tentar ajuste padrão primeiro
+    try:
+        coef = np.polyfit(x, y, grau)
+        y_pred_standard = np.polyval(coef, x)
+        
+        # Calcular R² padrão
+        ss_res = np.sum((y - y_pred_standard) ** 2)
+        ss_tot = np.sum((y - np.mean(y)) ** 2)
+        r2_standard = 1 - (ss_res / ss_tot)
+        
+        # Tentar ajuste regularizado
+        ridge_model, r2_ridge, y_pred_ridge, poly_features = ajuste_polinomial_regularizado(x, y, grau, alpha=0.1)
+        
+        # Escolher melhor resultado
+        if r2_ridge > r2_standard and ridge_model is not None:
+            modelos_poly[grau] = ridge_model
+            r2_poly[grau] = r2_ridge
+            modelos_ridge[grau] = {'model': ridge_model, 'features': poly_features}
+            print(f"Polinômio grau {grau}: R² = {r2_ridge:.4f} (Ridge Regularizado ✨)")
+        else:
+            modelos_poly[grau] = coef
+            r2_poly[grau] = r2_standard
+            print(f"Polinômio grau {grau}: R² = {r2_standard:.4f} (Padrão)")
+        
+        # Interpretação especial para grau 2 (parábola)
+        if grau == 2:
+            a, b, c = coef
+            if a < 0:  # Parábola com concavidade para baixo
+                x_pico = -b / (2 * a)
+                y_pico = np.polyval(coef, x_pico)
+                print(f"   📊 Pico estimado: dia {x_pico:.0f}, {y_pico:.0f} casos")
+    except:
+        r2_poly[grau] = 0
+        print(f"Polinômio grau {grau}: ERRO no ajuste")
 
 # 5. ANÁLISE DE PRECISÃO DOS MODELOS
 print("\n5. ANÁLISE DE PRECISÃO DOS MODELOS")
@@ -125,33 +282,102 @@ print("-" * 40)
 
 # Função para calcular métricas de precisão
 def calcular_metricas_precisao(y_real, y_pred):
-    rmse = np.sqrt(np.mean((y_real - y_pred) ** 2))
-    mae = np.mean(np.abs(y_real - y_pred))
-    mape = np.mean(np.abs((y_real - y_pred) / y_real)) * 100
-    return rmse, mae, mape
+    """Função compatível que usa as métricas avançadas"""
+    metricas = metricas_avancadas(y_real, y_pred)
+    return metricas['RMSE'], metricas['MAE'], metricas['MAPE']
 
-# Calcular métricas para cada modelo
-metricas_precisao = {}
+# Calcular métricas avançadas para cada modelo
+print("\n📊 MÉTRICAS DE PRECISÃO AVANÇADAS")
+print("=" * 65)
+
+# Preparar dados dos modelos
+modelos_completos = {}
 
 # Linear
 y_pred_linear = slope * x + intercept
-rmse_linear, mae_linear, mape_linear = calcular_metricas_precisao(y, y_pred_linear)
-metricas_precisao['Linear'] = {'RMSE': rmse_linear, 'MAE': mae_linear, 'MAPE': mape_linear}
+metricas_linear_full = metricas_avancadas(y, y_pred_linear)
+modelos_completos['Linear'] = {
+    'y_pred': y_pred_linear,
+    'metricas': metricas_linear_full,
+    'r2': r2_linear
+}
 
 # Exponencial
 if r2_exp > 0:
-    y_pred_exp = A * np.exp(k * x_exp)
-    y_real_exp = y[mask_exp]
-    rmse_exp, mae_exp, mape_exp = calcular_metricas_precisao(y_real_exp, y_pred_exp)
-    metricas_precisao['Exponencial'] = {'RMSE': rmse_exp, 'MAE': mae_exp, 'MAPE': mape_exp}
+    y_pred_exp = A * np.exp(k * x)
+    metricas_exp_full = metricas_avancadas(y, y_pred_exp)
+    modelos_completos['Exponencial'] = {
+        'y_pred': y_pred_exp,
+        'metricas': metricas_exp_full,
+        'r2': r2_exp
+    }
 
 # Polinomiais
 for grau in graus:
-    y_pred_poly = np.polyval(modelos_poly[grau], x)
-    rmse_poly, mae_poly, mape_poly = calcular_metricas_precisao(y, y_pred_poly)
-    metricas_precisao[f'Polinômio Grau {grau}'] = {'RMSE': rmse_poly, 'MAE': mae_poly, 'MAPE': mape_poly}
+    if r2_poly[grau] > 0:
+        if grau in modelos_ridge:  # Usar Ridge se disponível
+            ridge_info = modelos_ridge[grau]
+            x_poly = ridge_info['features'].transform(x.reshape(-1, 1))
+            y_pred_poly = ridge_info['model'].predict(x_poly)
+        else:  # Usar modelo polinomial padrão
+            y_pred_poly = np.polyval(modelos_poly[grau], x)
+            
+        metricas_poly_full = metricas_avancadas(y, y_pred_poly)
+        modelos_completos[f'Polinômio Grau {grau}'] = {
+            'y_pred': y_pred_poly,
+            'metricas': metricas_poly_full,
+            'r2': r2_poly[grau]
+        }
 
-print("📊 MÉTRICAS DE PRECISÃO:")
+# Imprimir tabela de comparação expandida
+print(f"{'Modelo':<18} {'R²':<7} {'R²Adj':<7} {'RMSE':<8} {'MAE':<8} {'MAPE':<8} {'NSE':<7} {'Will':<7} {'Status':<12}")
+print("-" * 95)
+
+for nome, dados in modelos_completos.items():
+    m = dados['metricas']
+    status, emoji = interpretar_metricas(m['R²'])
+    print(f"{nome:<18} {m['R²']:<7.3f} {m['R²_ajustado']:<7.3f} {m['RMSE']:<8.2f} {m['MAE']:<8.2f} {m['MAPE']:<8.1f}% {m['Nash_Sutcliffe']:<7.3f} {m['Willmott']:<7.3f} {emoji} {status.split(' ')[0]:<10}")
+
+# Modelo Ensemble
+if len(modelos_completos) > 1:
+    print("\n🔬 TESTANDO MODELO ENSEMBLE...")
+    modelos_para_ensemble = {nome: {'r2': dados['r2'], 'y_pred': dados['y_pred']} 
+                            for nome, dados in modelos_completos.items()}
+    y_ensemble = modelo_ensemble(x, y, modelos_para_ensemble)
+    metricas_ensemble = metricas_avancadas(y, y_ensemble)
+    
+    print(f"{'Ensemble':<18} {metricas_ensemble['R²']:<7.3f} {metricas_ensemble['R²_ajustado']:<7.3f} {metricas_ensemble['RMSE']:<8.2f} {metricas_ensemble['MAE']:<8.2f} {metricas_ensemble['MAPE']:<8.1f}% {metricas_ensemble['Nash_Sutcliffe']:<7.3f} {metricas_ensemble['Willmott']:<7.3f} ⭐ Híbrido")
+    
+    modelos_completos['Ensemble'] = {
+        'y_pred': y_ensemble,
+        'metricas': metricas_ensemble,
+        'r2': metricas_ensemble['R²']
+    }
+
+print("=" * 95)
+
+# Adicionar interpretação contextual
+print("\n🎯 INTERPRETAÇÃO EPIDEMIOLÓGICA:")
+melhor_modelo_nome = max(modelos_completos.keys(), key=lambda k: modelos_completos[k]['r2'])
+melhor_r2 = modelos_completos[melhor_modelo_nome]['r2']
+interpretacao, emoji = interpretar_metricas(melhor_r2)
+print(f"   Melhor modelo: {melhor_modelo_nome} (R² = {melhor_r2:.4f})")
+print(f"   Qualidade: {interpretacao} {emoji}")
+
+if melhor_r2 > 0.7:
+    print("   ✅ Modelo adequado para projeções")
+elif melhor_r2 > 0.5:
+    print("   ⚠️ Modelo moderado - use com cautela")
+else:
+    print("   🚨 Modelo inadequado - necessário mais dados ou outros métodos")
+
+# Preparar métricas para compatibilidade com código existente
+metricas_precisao = {}
+for nome, dados in modelos_completos.items():
+    m = dados['metricas']
+    metricas_precisao[nome] = {'RMSE': m['RMSE'], 'MAE': m['MAE'], 'MAPE': m['MAPE']}
+
+print("\n📊 RESUMO DAS MÉTRICAS:")
 print(f"{'Modelo':<20} {'R²':<8} {'RMSE':<12} {'MAE':<12} {'MAPE(%)':<10}")
 print("-" * 65)
 
@@ -177,15 +403,17 @@ for modelo in modelos_comparacao.keys():
     else:
         print(f"{modelo:<20} {r2_val:<8.4f} {'N/A':<12} {'N/A':<12} {'N/A':<10}")
 
-# Ordenar por R²
-modelos_ordenados = sorted(modelos_comparacao.items(), key=lambda x: x[1], reverse=True)
+# Ordenar por R² usando modelos_completos
+modelos_ordenados = sorted(modelos_completos.items(), key=lambda x: x[1]['r2'], reverse=True)
 
 print("Ranking dos modelos (por R²):")
-for i, (modelo, r2) in enumerate(modelos_ordenados, 1):
+for i, (modelo, dados) in enumerate(modelos_ordenados, 1):
+    r2 = dados['r2']
     emoji = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else "📊"
-    print(f"{emoji} {i}º {modelo}: R² = {r2:.4f}")
+    status, status_emoji = interpretar_metricas(r2)
+    print(f"{emoji} {i}º {modelo}: R² = {r2:.4f} {status_emoji}")
 
-melhor_modelo = modelos_ordenados[0]
+melhor_modelo = (modelos_ordenados[0][0], modelos_ordenados[0][1]['r2'])
 print(f"\n🏆 MELHOR MODELO: {melhor_modelo[0]} (R² = {melhor_modelo[1]:.4f})")
 
 # Definir variáveis de predição futuras antes dos gráficos
@@ -212,7 +440,9 @@ else:
     pred_futuro = np.full(len(x_futuro), y[-1])
 
 # Obter métricas do melhor modelo para zona de incerteza
-melhor_metricas = metricas_precisao.get(melhor_modelo[0], {})
+melhor_metricas_data = modelos_completos.get(melhor_modelo[0], {})
+melhor_metricas = melhor_metricas_data.get('metricas', {})
+melhor_metricas_precision = metricas_precisao.get(melhor_modelo[0], {})
 
 # 6. VISUALIZAÇÃO COMPARATIVA
 plt.figure(figsize=(15, 10))
@@ -318,7 +548,7 @@ plt.axvline(x=x.max(), color='orange', linestyle=':', linewidth=2, alpha=0.7, la
 
 # Zona de incerteza (sombreado)
 if len(pred_futuro) > 0:
-    margem_erro = melhor_metricas.get('RMSE', np.std(y)) if melhor_metricas else np.std(y)
+    margem_erro = melhor_metricas.get('RMSE', melhor_metricas_precision.get('RMSE', np.std(y)))
     plt.fill_between(x_futuro, pred_futuro - margem_erro, pred_futuro + margem_erro, 
                      alpha=0.2, color='red', label=f'Zona de Incerteza (±{margem_erro:.0f})')
 
@@ -348,9 +578,17 @@ for i, v in enumerate(r2_valores):
     ax1.text(i, v + 0.01, f'{v:.3f}', ha='center', va='bottom', fontweight='bold')
 
 # Subplot 2: Métricas de Erro
-if melhor_metricas:
+if melhor_metricas and len(melhor_metricas) > 0:
     metricas_nomes = ['RMSE', 'MAE', 'MAPE(%)']
     metricas_valores = [melhor_metricas['RMSE'], melhor_metricas['MAE'], melhor_metricas['MAPE']]
+    ax2.bar(metricas_nomes, metricas_valores, color=['salmon', 'lightgreen', 'lightyellow'])
+    ax2.set_title(f'Métricas de Erro - {melhor_modelo[0]}')
+    ax2.set_ylabel('Valor do Erro')
+    for i, v in enumerate(metricas_valores):
+        ax2.text(i, v + max(metricas_valores)*0.02, f'{v:.1f}', ha='center', va='bottom', fontweight='bold')
+elif melhor_metricas_precision and len(melhor_metricas_precision) > 0:
+    metricas_nomes = ['RMSE', 'MAE', 'MAPE(%)']
+    metricas_valores = [melhor_metricas_precision['RMSE'], melhor_metricas_precision['MAE'], melhor_metricas_precision['MAPE']]
     ax2.bar(metricas_nomes, metricas_valores, color=['salmon', 'lightgreen', 'lightyellow'])
     ax2.set_title(f'Métricas de Erro - {melhor_modelo[0]}')
     ax2.set_ylabel('Valor do Erro')
@@ -584,15 +822,15 @@ print("   🔄 Atualizável com novos dados diariamente")
 print("   🌐 Aplicável a qualquer cidade do dataset")
 
 print(f"\n📈 PRECISÃO QUANTIFICADA:")
-melhor_metricas = metricas_precisao.get(melhor_modelo[0], {})
-if melhor_metricas:
-    print(f"   🎯 Erro médio: ±{melhor_metricas['MAE']:.1f} casos/dia")
-    print(f"   📊 Erro percentual: {melhor_metricas['MAPE']:.1f}%")
-    print(f"   🔍 Desvio padrão: {melhor_metricas['RMSE']:.1f} casos")
+melhor_metricas_final = melhor_metricas if melhor_metricas else melhor_metricas_precision
+if melhor_metricas_final:
+    print(f"   🎯 Erro médio: ±{melhor_metricas_final['MAE']:.1f} casos/dia")
+    print(f"   📊 Erro percentual: {melhor_metricas_final['MAPE']:.1f}%")
+    print(f"   🔍 Desvio padrão: {melhor_metricas_final['RMSE']:.1f} casos")
 
-if melhor_metricas.get('MAPE', 100) < 20:
+if melhor_metricas_final and melhor_metricas_final.get('MAPE', 100) < 20:
     print("   ✅ PRECISÃO EXCELENTE: Confiança total para decisões")
-elif melhor_metricas.get('MAPE', 100) < 40:
+elif melhor_metricas_final and melhor_metricas_final.get('MAPE', 100) < 40:
     print("   ⚠️  PRECISÃO BOA: Adequada para planejamento")
 else:
     print("   ❌ PRECISÃO LIMITADA: Foco em monitoramento intensivo")
