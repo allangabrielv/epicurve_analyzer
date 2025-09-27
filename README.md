@@ -154,5 +154,3 @@ linear_regression_project/
 ```
 
 ---
-
-** EpiCurve Analyzer: Onde a matemática encontra a realidade, e os dados salvam vidas.**
