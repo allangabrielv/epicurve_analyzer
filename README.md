@@ -17,7 +17,7 @@ Implementar e comparar métodos de ajuste de curvas para modelagem epidemiológi
 ### Diferencial
 - **Análise automatizada** de precisão com métricas RMSE, MAE e MAPE
 - **Predições futuras de disseminação** para os próximos 14 dias
-- **Interpretação epidemiológica** completa dos resultados
+- **Interpretação epidemiológica** dos resultados
 - **Impacto econômico** quantificado das decisões baseadas em dados
 - **Visualizações interativas** para gestores de saúde pública e instituições
 
@@ -26,7 +26,7 @@ Implementar e comparar métodos de ajuste de curvas para modelagem epidemiológi
 ## Sobre o Dataset (Conjunto de Dados)
 
 O caso_full.csv.gz é um dataset epidemiológico fornecido pelo Ministério da Saúde contendo registros históricos de casos relacionados à COVID-19. O arquivo foi projetado para análise de tendências epidemiológicas e modelagem preditiva.
-O Conjunto de Dados contém **3.8 Milhões de Registros** de Reports Municipais Diários, para todas as **5570 cidades** do país. O arquivo bruto foi extraído diretamente do **DataSUS**.
+O Conjunto de Dados contém **3.8 Milhões de Registros** de Reports Municipais Diários, para todas as **5570 cidades** do país. O arquivo bruto foi extraído diretamente do **DataSUS (SEIDIGI) - TABNET**.
 O Período epidemiológico analisado se inicia em **24 de fevereiro de 2020** e se estende até **27 de fevereiro de 2022**.
 
 ### Estrutura : Dados tabulares organizados por localização geográfica e período temporal
@@ -81,7 +81,7 @@ python modelagem_epidemias_dataset.py
 ```
 
 ### Passo 3: Interação
-- O sistema irá listar as cidades disponíveis
+- O sistema irá listar algumas das cidades disponíveis
 - Digite o nome de uma cidade ou pressione Enter para usar a padrão
 - Aguarde a análise automática ser executada
 
@@ -135,13 +135,6 @@ python modelagem_epidemias_dataset.py
 - **Comparação por R²**: Critério de seleção do melhor modelo
 - **Interpretação estatística**: Significado epidemiológico
 
-### Inovações Implementadas
-- **Automação completa** do processo de análise
-- **Métricas de precisão** além do R²
-- **Sistema de predições** com intervalo de confiança
-- **Contexto de negócio** para gestores públicos
-- **Storytelling quantitativo** do valor gerado
-
 ---
 
 ## Exemplo de Uso
@@ -179,6 +172,107 @@ python modelagem_epidemias_dataset.py
 ![](/assets/Figure_2.png)
 ---
 ![](/assets/Figure_3.png)
+---
+
+## Desafios
+### Subnotificação Sistemática:
+- **Casos assintomáticos**: Grande parcela não testada (~40-60% dos casos reais)
+- **Testagem limitada**: Capacidade diagnóstica insuficiente, especialmente 2020-2021
+- **Acesso desigual**: Populações vulneráveis com menor acesso a testes
+- **Casos leves**: Muitos não procuram assistência médica
+
+### Defasagem e Acúmulo de Reports:
+- **Atraso de notificação**: 3-7 dias entre ocorrência e registro oficial
+- **Reports acumulados**: Backlog de casos notificados em lotes
+- **Fins de semana e Feriados**: Redução artificial nos sábados/domingos e distorções em períodos festivos
+- **Regularização posterior**: Correções retroativas alteram histórico
+- **Revisões retroativas**: Reclassificação de casos suspeitos
+
+
+### Dependência de Infraestrutura Local:
+- **Secretarias municipais**: Capacidade técnica heterogênea
+- **Sistemas de informação**: SIVEP, e-SUS, GAL com inconsistências
+- **Recursos humanos**: Equipes sobrecarregadas em períodos críticos
+- **Padronização**: Critérios diagnósticos variam entre regiões
+
+### Viés de Detecção Regional:
+- **Capacidade laboratorial**: Grandes centros vs interior
+- **Protocolos de testagem**: Mudanças de critério ao longo do tempo
+- **Estratégias de vigilância**: Testagem ativa vs passiva
+- **Recursos financeiros**: Orçamento municipal para vigilância epidemiológica
+- **Duplicações**: Mesmo caso notificado em múltiplos sistemas
+
+### Fatores Socioeconômicos Não Capturados:
+- **Mobilidade populacional**: Fluxos migratórios não registrados
+- **Densidade demográfica**: Variações intramunicipais significativas
+- **Condições habitacionais**: Aglomeração e ventilação inadequada
+- **Acesso a saúde**: Cobertura e qualidade dos serviços locais
+- **Comportamento social**: Adesão a medidas preventivas
+
+### Limitações Técnicas :
+- **Definição de "novo caso"**: Critérios podem variar
+- **Classificação final**: Confirmado vs provável vs descartado
+- **Geocoding**: Problemas na identificação municipal precisa
+
+---
+
+## Referências
+
+### Subnotificação de Casos
+
+**Li, R., Pei, S., Chen, B., et al. (2020)**  
+*"Substantial undocumented infection facilitates the rapid dissemination of novel coronavirus (SARS-CoV-2)"*  
+Revela que a subnotificação é um fenômeno comum em vigilância epidemiológica.
+[10.1126/science.abb3221](https://doi.org/10.1126/science.abb3221) 
+
+**Maugeri, A., Barchitta, M., Battiato, S., et al. (2020)**  
+*"Modeling the novel coronavirus (COVID-19) outbreak in Sicily, Italy"*  
+Desenvolve métodos estatísticos para correção da subnotificação em dados epidemiológicos regionais.
+[PMID:32660125](https://pubmed.ncbi.nlm.nih.gov/32660125) 
+
+### Casos Leves/Assintomáticos Não Detectados
+
+**Byambasuren, O., Cardona, M., Bell, K., et al. (2020)**  
+*"Estimating the extent of asymptomatic COVID-19 and its potential for community transmission: systematic review and meta-analysis"*  
+Quantifica a proporção de casos assintomáticos (estimativa: 20-40%), fundamentando a necessidade de ajustes em modelos epidemiológicos baseados apenas em casos sintomáticos notificados.
+[PMID:36340059](https://pubmed.ncbi.nlm.nih.gov/36340059)
+
+**Oran, D.P., Topol, E.J. (2020)**  
+*"Prevalence of asymptomatic SARS-CoV-2 infection: a narrative review"*  
+Compila evidências sobre a prevalência de infecções assintomáticas.
+[PMID:32491919](https://pubmed.ncbi.nlm.nih.gov/32491919)
+
+### Redução Artificial em Finais de Semana e Atrasos de Notificação
+
+**Bastos, S.B., Cajueiro, D.O. (2020)**  
+*"Modeling and forecasting the early evolution of the Covid-19 pandemic in Brazil"*  
+Analisa padrões de notificação no Brasil, identificando reduções sistemáticas em finais de semana e feriados que afetam a qualidade dos dados para modelagem.
+[Bastos & Cajueiro (2020) - Scientific Reports](https://www.nature.com/articles/s41598-020-76257-1)
+
+**Dehning, J., Zierenberg, J., Spitzner, F.P., et al. (2020)**  
+*"Inferring change points in the spread of COVID-19 reveals the effectiveness of interventions"*  
+Desenvolve métodos estatísticos para correção de atrasos de notificação em séries temporais epidemiológicas.
+[10.1126/science.abb9789](https://www.science.org/doi/10.1126/science.abb9789)
+
+### Acesso Desigual aos Cuidados de Saúde
+
+**Webb Hooper, M., Nápoles, A.M., Pérez-Stable, E.J. (2020)**  
+*"COVID-19 and Racial/Ethnic Disparities"*  
+Documenta disparidades significativas no acesso a testagem e cuidados médicos entre diferentes grupos socioeconômicos.
+[Webb Hooper et al. (2020) - JAMA](https://jamanetwork.com/journals/jama/fullarticle/2766098)
+
+**Mackey, K., Ayers, C.K., Kondo, K.K., et al. (2021)**  
+*"Racial and Ethnic Disparities in COVID-19-Related Infections, Hospitalizations, and Deaths: A Systematic Review"*  
+Revisão sistemática que quantifica disparidades no acesso aos serviços de saúde durante a pandemia.
+[PMID:33253040](https://pubmed.ncbi.nlm.nih.gov/33253040)
+
+### Fontes Oficiais do Ministério da Saúde
+
+- **DATASUS**: [datasus.saude.gov.br](https://datasus.saude.gov.br/)
+- **TABNET**: [Informações de Saúde](https://datasus.saude.gov.br/informacoes-de-saude-tabnet/)
+- **INFOMS COVID-19**: [Painel COVID-19](https://infoms.saude.gov.br/extensions/covid-19_html/covid-19_html.html)
+- **Portal COVID-19**: [covid.saude.gov.br](https://covid.saude.gov.br/)
+
 ---
 
 ## Estrutura do Projeto
