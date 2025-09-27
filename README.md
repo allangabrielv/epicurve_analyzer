@@ -137,8 +137,11 @@ python modelagem_epidemias_dataset.py
  Economia potencial: R$ 2.450.000
  ROI da ferramenta: 300x o investimento
 ```
+---
 ![](/assets/Figure_1.png)
+---
 ![](/assets/Figure_2.png)
+---
 ![](/assets/Figure_3.png)
 ---
 
