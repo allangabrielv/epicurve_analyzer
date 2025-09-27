@@ -154,6 +154,7 @@ linear_regression_project/
 ├── examinar_dataset.py              # Script de verificação
 ├── caso_full.csv.gz                # Dataset (3.8M registros)
 ├── material_ajuste_de_curvas.ipynb # Material-base do projeto
+├── assets/                        # Imagens do dashboard do projeto
 └── requirements.txt                 # Dependências (opcional)
 
 ```
