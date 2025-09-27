@@ -137,15 +137,76 @@ print(f"Cidades com mais registros (corrigido):")
 for i, (cidade_estado, count) in enumerate(cidades_principais.head(10).items(), 1):
     print(f"  {i:2d}. {cidade_estado}: {count} registros")
 
-print(f"\nEscolha uma cidade da lista acima (use formato: Cidade - Estado)")
-cidade_selecionada = input("Escolha uma cidade para análise: ") or cidades_principais.index[0]
-df_cidade = df_valido[df_valido['cidade_estado'] == cidade_selecionada].copy()
+print(f"\n🔍 BUSCA INTELIGENTE DE CIDADES")
+print(f"Você pode digitar:")
+print(f"  - Nome completo: 'São Paulo - SP'")
+print(f"  - Apenas a cidade: 'São Paulo' (mostrará opções se houver múltiplas)")
+print(f"  - Deixar em branco: usa a cidade com mais registros")
 
-if len(df_cidade) == 0:
-    print(f"❌ Cidade '{cidade_selecionada}' não encontrada!")
-    print("Usando a cidade com mais registros...")
+cidade_input = input("\nEscolha uma cidade para análise: ").strip()
+
+if not cidade_input:
+    # Usuário deixou em branco - usar a primeira
     cidade_selecionada = cidades_principais.index[0]
     df_cidade = df_valido[df_valido['cidade_estado'] == cidade_selecionada].copy()
+    print(f"\n✅ Usando cidade padrão: {cidade_selecionada}")
+else:
+    # Usuário digitou algo
+    if ' - ' in cidade_input:
+        # Formato completo 'Cidade - Estado'
+        cidade_selecionada = cidade_input
+        df_cidade = df_valido[df_valido['cidade_estado'] == cidade_selecionada].copy()
+        
+        if len(df_cidade) == 0:
+            print(f"❌ '{cidade_selecionada}' não encontrada!")
+            # Buscar sugestões similares
+            sugestoes = df_valido[df_valido['cidade_estado'].str.contains(cidade_input.split(' - ')[0], case=False, na=False)]['cidade_estado'].unique()[:5]
+            if len(sugestoes) > 0:
+                print(f"\n💡 Sugestões similares:")
+                for sug in sugestoes:
+                    print(f"  • {sug}")
+            print(f"\n🔄 Usando cidade padrão: {cidades_principais.index[0]}")
+            cidade_selecionada = cidades_principais.index[0]
+            df_cidade = df_valido[df_valido['cidade_estado'] == cidade_selecionada].copy()
+    else:
+        # Apenas nome da cidade - buscar opções
+        opcoes = df_valido[df_valido['city'].str.contains(cidade_input, case=False, na=False)]['cidade_estado'].unique()
+        
+        if len(opcoes) == 0:
+            print(f"❌ Nenhuma cidade encontrada com '{cidade_input}'")
+            print(f"🔄 Usando cidade padrão: {cidades_principais.index[0]}")
+            cidade_selecionada = cidades_principais.index[0]
+            df_cidade = df_valido[df_valido['cidade_estado'] == cidade_selecionada].copy()
+        elif len(opcoes) == 1:
+            # Apenas uma opção - usar diretamente
+            cidade_selecionada = opcoes[0]
+            df_cidade = df_valido[df_valido['cidade_estado'] == cidade_selecionada].copy()
+            print(f"\n✅ Cidade encontrada: {cidade_selecionada}")
+        else:
+            # Múltiplas opções - mostrar menu
+            print(f"\n🔍 Encontradas {len(opcoes)} cidades com '{cidade_input}':")
+            opcoes_ordenadas = sorted(opcoes)
+            for i, opcao in enumerate(opcoes_ordenadas, 1):
+                registros = len(df_valido[df_valido['cidade_estado'] == opcao])
+                print(f"  {i}. {opcao} ({registros} registros)")
+            
+            try:
+                escolha = input(f"\nEscolha uma opção (1-{len(opcoes_ordenadas)}) ou Enter para usar a primeira: ").strip()
+                if escolha == "":
+                    cidade_selecionada = opcoes_ordenadas[0]
+                else:
+                    idx = int(escolha) - 1
+                    if 0 <= idx < len(opcoes_ordenadas):
+                        cidade_selecionada = opcoes_ordenadas[idx]
+                    else:
+                        print(f"❌ Opção inválida! Usando a primeira opção.")
+                        cidade_selecionada = opcoes_ordenadas[0]
+            except (ValueError, EOFError):
+                print(f"❌ Entrada inválida ou pipe detectado! Usando a primeira opção.")
+                cidade_selecionada = opcoes_ordenadas[0]
+            
+            df_cidade = df_valido[df_valido['cidade_estado'] == cidade_selecionada].copy()
+            print(f"\n✅ Cidade selecionada: {cidade_selecionada}")
 
 print(f"\n✅ Analisando: {cidade_selecionada}")
 print(f"📊 Total de registros: {len(df_cidade)}")
