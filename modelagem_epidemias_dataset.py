@@ -7,17 +7,6 @@ from sklearn.linear_model import Ridge
 from sklearn.preprocessing import PolynomialFeatures
 from scipy import stats
 
-# ==========================================
-# EPICURVE ANALYZER - PROJETO NUMBIOSIS
-# ==========================================
-
-# FUNÇÕES DE OTIMIZAÇÃO E MELHORIAS TÉCNICAS
-# ==========================================
-
-# Função de otimização de janela temporal removida conforme solicitação do usuário
-
-# Função limpar_outliers removida conforme solicitação do usuário
-
 def suavizar_dados(y, janela=3):
     """Aplica suavização por média móvel"""
     if len(y) < janela:
@@ -143,29 +132,6 @@ def calcular_taxa_economia_dinamica(r2, casos_projetados, populacao_estimada=Non
     
     return taxa_final, fator_escala, fator_urgencia
 
-# FUNÇÃO MODELO_ENSEMBLE - DESATIVADA (causava relatórios estranhos)
-# def modelo_ensemble(x, y, modelos_dict, pesos=None):
-#     """Combina múltiplos modelos por ensemble"""
-#     if pesos is None:
-#         pesos = [1/len(modelos_dict)] * len(modelos_dict)
-#     
-#     y_ensemble = np.zeros_like(y, dtype=float)
-#     peso_total = 0
-#     
-#     for i, (nome, modelo_info) in enumerate(modelos_dict.items()):
-#         if modelo_info['r2'] > 0.1:  # Só incluir modelos minimamente úteis
-#             y_pred = modelo_info['y_pred']
-#             peso = pesos[i] * modelo_info['r2']  # Peso proporcional ao R²
-#             y_ensemble += peso * y_pred
-#             peso_total += peso
-#     
-#     if peso_total > 0:
-#         y_ensemble /= peso_total
-#     else:
-#         y_ensemble = y  # Fallback para dados originais
-#     
-#     return y_ensemble
-
 print("="*60)
 print("    EPICURVE ANALYZER - MODELAGEM EPIDEMIOLÓGICA")
 print("    Métodos: Regressão Linear, Exponencial e Polinomial")
@@ -189,16 +155,16 @@ df_valido = df[(df['city'] != 'Importados/Indefinidos') &
 
 # Obter cidades principais por registros (agora corrigido)
 cidades_principais = df_valido['cidade_estado'].value_counts().head(15)
-print(f"\n⚠️  CORREÇÃO APLICADA: Usando 'Cidade - Estado' para evitar duplicação")
+print(f"\n  CORREÇÃO APLICADA: Usando 'Cidade - Estado' para evitar duplicação")
 print(f"Cidades com mais registros (corrigido):")
 for i, (cidade_estado, count) in enumerate(cidades_principais.head(10).items(), 1):
     print(f"  {i:2d}. {cidade_estado}: {count} registros")
 
-print(f"\n🔍 BUSCA INTELIGENTE DE CIDADES")
+print(f"\n BUSCA INTELIGENTE DE CIDADES")
 print(f"Você pode digitar:")
 print(f"  - Nome completo: 'São Paulo - SP'")
 print(f"  - Apenas a cidade: 'São Paulo' (mostrará opções se houver múltiplas)")
-print(f"  - Deixar em branco: usa a cidade com mais registros")
+print(f"  - Deixar em branco: usa a cidade com mais registros (São Paulo)")
 
 cidade_input = input("\nEscolha uma cidade para análise: ").strip()
 
@@ -206,7 +172,7 @@ if not cidade_input:
     # Usuário deixou em branco - usar a primeira
     cidade_selecionada = cidades_principais.index[0]
     df_cidade = df_valido[df_valido['cidade_estado'] == cidade_selecionada].copy()
-    print(f"\n✅ Usando cidade padrão: {cidade_selecionada}")
+    print(f"\n Usando cidade padrão: {cidade_selecionada}")
 else:
     # Usuário digitou algo
     if ' - ' in cidade_input:
@@ -215,14 +181,14 @@ else:
         df_cidade = df_valido[df_valido['cidade_estado'] == cidade_selecionada].copy()
         
         if len(df_cidade) == 0:
-            print(f"❌ '{cidade_selecionada}' não encontrada!")
+            print(f" '{cidade_selecionada}' não encontrada!")
             # Buscar sugestões similares
             sugestoes = df_valido[df_valido['cidade_estado'].str.contains(cidade_input.split(' - ')[0], case=False, na=False)]['cidade_estado'].unique()[:5]
             if len(sugestoes) > 0:
                 print(f"\n💡 Sugestões similares:")
                 for sug in sugestoes:
                     print(f"  • {sug}")
-            print(f"\n🔄 Usando cidade padrão: {cidades_principais.index[0]}")
+            print(f"\n Usando cidade padrão: {cidades_principais.index[0]}")
             cidade_selecionada = cidades_principais.index[0]
             df_cidade = df_valido[df_valido['cidade_estado'] == cidade_selecionada].copy()
     else:
@@ -230,18 +196,18 @@ else:
         opcoes = df_valido[df_valido['city'].str.contains(cidade_input, case=False, na=False)]['cidade_estado'].unique()
         
         if len(opcoes) == 0:
-            print(f"❌ Nenhuma cidade encontrada com '{cidade_input}'")
-            print(f"🔄 Usando cidade padrão: {cidades_principais.index[0]}")
+            print(f" Nenhuma cidade encontrada com '{cidade_input}'")
+            print(f" Usando cidade padrão: {cidades_principais.index[0]}")
             cidade_selecionada = cidades_principais.index[0]
             df_cidade = df_valido[df_valido['cidade_estado'] == cidade_selecionada].copy()
         elif len(opcoes) == 1:
             # Apenas uma opção - usar diretamente
             cidade_selecionada = opcoes[0]
             df_cidade = df_valido[df_valido['cidade_estado'] == cidade_selecionada].copy()
-            print(f"\n✅ Cidade encontrada: {cidade_selecionada}")
+            print(f"\n Cidade encontrada: {cidade_selecionada}")
         else:
             # Múltiplas opções - mostrar menu
-            print(f"\n🔍 Encontradas {len(opcoes)} cidades com '{cidade_input}':")
+            print(f"\n Encontradas {len(opcoes)} cidades com '{cidade_input}':")
             opcoes_ordenadas = sorted(opcoes)
             for i, opcao in enumerate(opcoes_ordenadas, 1):
                 registros = len(df_valido[df_valido['cidade_estado'] == opcao])
@@ -256,23 +222,23 @@ else:
                     if 0 <= idx < len(opcoes_ordenadas):
                         cidade_selecionada = opcoes_ordenadas[idx]
                     else:
-                        print(f"❌ Opção inválida! Usando a primeira opção.")
+                        print(f" Opção inválida! Usando a primeira opção.")
                         cidade_selecionada = opcoes_ordenadas[0]
             except (ValueError, EOFError):
-                print(f"❌ Entrada inválida ou pipe detectado! Usando a primeira opção.")
+                print(f" Entrada inválida ou pipe detectado! Usando a primeira opção.")
                 cidade_selecionada = opcoes_ordenadas[0]
             
             df_cidade = df_valido[df_valido['cidade_estado'] == cidade_selecionada].copy()
             print(f"\n✅ Cidade selecionada: {cidade_selecionada}")
 
-print(f"\n✅ Analisando: {cidade_selecionada}")
-print(f"📊 Total de registros: {len(df_cidade)}")
+print(f"\n Analisando: {cidade_selecionada}")
+print(f" Total de registros: {len(df_cidade)}")
 if len(df_cidade) > 0:
     estado = df_cidade['state'].iloc[0]
     cidade = df_cidade['city'].iloc[0]
     pop = df_cidade['estimated_population'].iloc[0]
-    print(f"📍 Estado: {estado}")
-    print(f"👥 População estimada: {pop:,.0f}" if not pd.isna(pop) else "👥 População: N/A")
+    print(f" Estado: {estado}")
+    print(f" População estimada: {pop:,.0f}" if not pd.isna(pop) else " População: N/A")
 
 # Converter data e ordenar
 df_cidade['date'] = pd.to_datetime(df_cidade['date'])
@@ -292,32 +258,32 @@ print(f"Período original: {len(x_raw)} dias de dados")
 print(f"Casos diários originais: {y_raw.min():.0f} a {y_raw.max():.0f}")
 
 # APLICAR OTIMIZAÇÕES
-print("\n🔧 APLICANDO OTIMIZAÇÕES TÉCNICAS...")
+print("\n APLICANDO OTIMIZAÇÕES TÉCNICAS...")
 print("-" * 50)
 
 # 1. Usar dados brutos sem limpeza de outliers
 x_clean, y_clean = x_raw, y_raw
-print("📊 Usando dados brutos (limpeza de outliers removida)")
+print(" Usando dados brutos (limpeza de outliers removida)")
 
 # 2. Usar todos os dados disponíveis (otimização de janela temporal removida)
 x_otimo = x_clean
 y_otimo = y_clean
-print(f"📊 Usando todos os dados disponíveis: {len(x_clean)} dias")
+print(f" Usando todos os dados disponíveis: {len(x_clean)} dias")
 
 # 3. Suavização se necessário
 coef_variacao = np.std(y_otimo) / np.mean(y_otimo) if np.mean(y_otimo) > 0 else 0
 if coef_variacao > 1.0:  # Alta variabilidade
     y_suave = suavizar_dados(y_otimo, janela=3)
-    print(f"🔄 Suavização aplicada (CV = {coef_variacao:.2f})")
+    print(f" Suavização aplicada (CV = {coef_variacao:.2f})")
 else:
     y_suave = y_otimo
-    print(f"🔄 Suavização não necessária (CV = {coef_variacao:.2f})")
+    print(f" Suavização não necessária (CV = {coef_variacao:.2f})")
 
 # Usar dados otimizados para análise
 x = x_otimo
 y = y_suave
 
-print(f"\n✅ DADOS OTIMIZADOS FINAIS:")
+print(f"\n DADOS OTIMIZADOS FINAIS:")
 print(f"   Período analisado: {len(x)} dias")
 print(f"   Casos diários: {y.min():.1f} a {y.max():.1f}")
 print(f"   Média: {y.mean():.1f} ± {y.std():.1f}")
@@ -334,9 +300,9 @@ print(f"R² = {r2_linear:.4f}")
 print(f"Taxa de crescimento: {slope:.2f} casos/dia")
 
 if slope > 0:
-    print(f"📈 Tendência de CRESCIMENTO ({slope:.2f} casos/dia)")
+    print(f" Tendência de CRESCIMENTO ({slope:.2f} casos/dia)")
 else:
-    print(f"📉 Tendência de DECLÍNIO ({abs(slope):.2f} casos/dia)")
+    print(f" Tendência de DECLÍNIO ({abs(slope):.2f} casos/dia)")
 
 # 3. AJUSTE EXPONENCIAL VIA LINEARIZAÇÃO (MATERIAL DO PROFESSOR)
 print("\n3. AJUSTE EXPONENCIAL (via Linearização)")
@@ -359,14 +325,14 @@ if np.sum(mask_exp) > 2:
     
     if k > 0:
         tempo_duplicacao = np.log(2) / k
-        print(f"⏱️ Tempo de duplicação: {tempo_duplicacao:.1f} dias")
+        print(f" Tempo de duplicação: {tempo_duplicacao:.1f} dias")
     else:
         tempo_reducao = -np.log(2) / k  
-        print(f"⏱️ Tempo de redução pela metade: {tempo_reducao:.1f} dias")
+        print(f" Tempo de redução pela metade: {tempo_reducao:.1f} dias")
 else:
     r2_exp = 0
     A, k = 0, 0
-    print("❌ Dados insuficientes para ajuste exponencial")
+    print(" Dados insuficientes para ajuste exponencial")
 
 # 4. AJUSTES POLINOMIAIS REGULARIZADOS
 print("\n4. AJUSTES POLINOMIAIS REGULARIZADOS")
@@ -408,7 +374,7 @@ for grau in graus:
             if a < 0:  # Parábola com concavidade para baixo
                 x_pico = -b / (2 * a)
                 y_pico = np.polyval(coef, x_pico)
-                print(f"   📊 Pico estimado: dia {x_pico:.0f}, {y_pico:.0f} casos")
+                print(f"    Pico estimado: dia {x_pico:.0f}, {y_pico:.0f} casos")
     except:
         r2_poly[grau] = 0
         print(f"Polinômio grau {grau}: ERRO no ajuste")
@@ -424,7 +390,7 @@ def calcular_metricas_precisao(y_real, y_pred):
     return metricas['RMSE'], metricas['MAE'], metricas['MAPE']
 
 # Calcular métricas avançadas para cada modelo
-print("\n📊 MÉTRICAS DE PRECISÃO AVANÇADAS")
+print("\n MÉTRICAS DE PRECISÃO AVANÇADAS")
 print("=" * 65)
 
 # Preparar dados dos modelos
@@ -475,26 +441,10 @@ for nome, dados in modelos_completos.items():
     status, emoji = interpretar_metricas(m['R²'])
     print(f"{nome:<18} {m['R²']:<7.3f} {m['R²_ajustado']:<7.3f} {m['RMSE']:<8.2f} {m['MAE']:<8.2f} {m['MAPE']:<8.1f}% {m['Nash_Sutcliffe']:<7.3f} {m['Willmott']:<7.3f} {emoji} {status.split(' ')[0]:<10}")
 
-# Modelo Ensemble - DESATIVADO (causava relatórios estranhos)
-# if len(modelos_completos) > 1:
-#     print("\n🔬 TESTANDO MODELO ENSEMBLE...")
-#     modelos_para_ensemble = {nome: {'r2': dados['r2'], 'y_pred': dados['y_pred']} 
-#                             for nome, dados in modelos_completos.items()}
-#     y_ensemble = modelo_ensemble(x, y, modelos_para_ensemble)
-#     metricas_ensemble = metricas_avancadas(y, y_ensemble)
-#     
-#     print(f"{'Ensemble':<18} {metricas_ensemble['R²']:<7.3f} {metricas_ensemble['R²_ajustado']:<7.3f} {metricas_ensemble['RMSE']:<8.2f} {metricas_ensemble['MAE']:<8.2f} {metricas_ensemble['MAPE']:<8.1f}% {metricas_ensemble['Nash_Sutcliffe']:<7.3f} {metricas_ensemble['Willmott']:<7.3f} ⭐ Híbrido")
-#     
-#     modelos_completos['Ensemble'] = {
-#         'y_pred': y_ensemble,
-#         'metricas': metricas_ensemble,
-#         'r2': metricas_ensemble['R²']
-#     }
-
 print("=" * 95)
 
 # Adicionar interpretação contextual
-print("\n🎯 INTERPRETAÇÃO EPIDEMIOLÓGICA:")
+print("\n INTERPRETAÇÃO EPIDEMIOLÓGICA:")
 melhor_modelo_nome = max(modelos_completos.keys(), key=lambda k: modelos_completos[k]['r2'])
 melhor_r2 = modelos_completos[melhor_modelo_nome]['r2']
 interpretacao, emoji = interpretar_metricas(melhor_r2)
@@ -502,11 +452,11 @@ print(f"   Melhor modelo: {melhor_modelo_nome} (R² = {melhor_r2:.4f})")
 print(f"   Qualidade: {interpretacao} {emoji}")
 
 if melhor_r2 > 0.7:
-    print("   ✅ Modelo adequado para projeções")
+    print("    Modelo adequado para projeções")
 elif melhor_r2 > 0.5:
-    print("   ⚠️ Modelo moderado - use com cautela")
+    print("    Modelo moderado - use com cautela")
 else:
-    print("   🚨 Modelo inadequado - necessário mais dados ou outros métodos")
+    print("    Modelo inadequado - necessário mais dados ou outros métodos")
 
 # Preparar métricas para compatibilidade com código existente
 metricas_precisao = {}
@@ -514,7 +464,7 @@ for nome, dados in modelos_completos.items():
     m = dados['metricas']
     metricas_precisao[nome] = {'RMSE': m['RMSE'], 'MAE': m['MAE'], 'MAPE': m['MAPE']}
 
-print("\n📊 RESUMO DAS MÉTRICAS:")
+print("\n RESUMO DAS MÉTRICAS:")
 print(f"{'Modelo':<20} {'R²':<8} {'RMSE':<12} {'MAE':<12} {'MAPE(%)':<10}")
 print("-" * 65)
 
@@ -551,7 +501,7 @@ for i, (modelo, dados) in enumerate(modelos_ordenados, 1):
     print(f"{emoji} {i}º {modelo}: R² = {r2:.4f} {status_emoji}")
 
 melhor_modelo = (modelos_ordenados[0][0], modelos_ordenados[0][1]['r2'])
-print(f"\n🏆 MELHOR MODELO: {melhor_modelo[0]} (R² = {melhor_modelo[1]:.4f})")
+print(f"\n MELHOR MODELO: {melhor_modelo[0]} (R² = {melhor_modelo[1]:.4f})")
 
 # Definir variáveis de predição futuras antes dos gráficos
 dias_futuros = 14
@@ -823,8 +773,8 @@ print("\n" + "="*60)
 print("CONCLUSÕES EPIDEMIOLÓGICAS")
 print("="*60)
 
-print(f"\n📊 CIDADE ANALISADA: {cidade_selecionada}")
-print(f"📈 MELHOR MODELO: {melhor_modelo[0]} (R² = {melhor_modelo[1]:.4f})")
+print(f"\n CIDADE ANALISADA: {cidade_selecionada}")
+print(f" MELHOR MODELO: {melhor_modelo[0]} (R² = {melhor_modelo[1]:.4f})")
 
 if melhor_modelo[0] == 'Linear':
     print("\n🔍 INTERPRETAÇÃO:")
@@ -836,7 +786,7 @@ if melhor_modelo[0] == 'Linear':
         print("   • Indica fase de controle efetivo da epidemia")
 
 elif melhor_modelo[0] == 'Exponencial':
-    print("\n🔍 INTERPRETAÇÃO:")
+    print("\n INTERPRETAÇÃO:")
     if k > 0:
         tempo_dup = np.log(2) / k
         print(f"   • Crescimento exponencial com taxa {k:.4f} dia⁻¹")
@@ -850,7 +800,7 @@ elif melhor_modelo[0] == 'Exponencial':
 
 elif 'Polinômio' in melhor_modelo[0]:
     grau_melhor = int(melhor_modelo[0].split()[-1])
-    print("\n🔍 INTERPRETAÇÃO:")
+    print("\n INTERPRETAÇÃO:")
     print(f"   • Curva polinomial de grau {grau_melhor}")
     if grau_melhor == 2:
         a, b, c = modelos_poly[2]
@@ -868,7 +818,7 @@ elif 'Polinômio' in melhor_modelo[0]:
 print("\n8. PREDIÇÕES E CENÁRIOS FUTUROS")
 print("-" * 40)
 
-print(f"🔮 PROJEÇÕES PARA OS PRÓXIMOS {dias_futuros} DIAS:")
+print(f" PROJEÇÕES PARA OS PRÓXIMOS {dias_futuros} DIAS:")
 print(f"   (Baseado no melhor modelo: {melhor_modelo[0]})")
 print()
 
@@ -878,23 +828,23 @@ for i in range(0, len(pred_futuro), 7):
     casos_semana = pred_futuro[i:i+7]
     media_semanal = np.mean(casos_semana)
     total_semanal = np.sum(casos_semana)
-    print(f"   📅 Semana {semana}: {media_semanal:.0f} casos/dia (Total: {total_semanal:.0f} casos)")
+    print(f"    Semana {semana}: {media_semanal:.0f} casos/dia (Total: {total_semanal:.0f} casos)")
 
 # Análise de tendência
 if len(pred_futuro) >= 2:
     tendencia = pred_futuro[-1] - pred_futuro[0]
     if tendencia > 0:
-        print(f"\n   📈 TENDÊNCIA: Crescimento de {tendencia:.0f} casos em {dias_futuros} dias")
-        print(f"   ⚠️  ALERTA: Possível aumento da transmissão")
+        print(f"\n    TENDÊNCIA: Crescimento de {tendencia:.0f} casos em {dias_futuros} dias")
+        print(f"     ALERTA: Possível aumento da transmissão")
     elif tendencia < 0:
-        print(f"\n   📉 TENDÊNCIA: Declínio de {abs(tendencia):.0f} casos em {dias_futuros} dias")
-        print(f"   ✅ POSITIVO: Indicação de controle da epidemia")
+        print(f"\n    TENDÊNCIA: Declínio de {abs(tendencia):.0f} casos em {dias_futuros} dias")
+        print(f"    POSITIVO: Indicação de controle da epidemia")
     else:
-        print(f"\n   ➡️  TENDÊNCIA: Estabilização dos casos")
-        print(f"   ⚖️  NEUTRO: Manutenção do cenário atual")
+        print(f"\n     TENDÊNCIA: Estabilização dos casos")
+        print(f"     NEUTRO: Manutenção do cenário atual")
 
-print("\n🚨 IMPACTO NA TOMADA DE DECISÃO RÁPIDA:")
-print("   📊 Precisão do modelo permite:")
+print("\n IMPACTO NA TOMADA DE DECISÃO RÁPIDA:")
+print("    Precisão do modelo permite:")
 if melhor_modelo[1] > 0.8:
     print("      • Planejamento hospitalar com 14 dias de antecedência")
     print("      • Alocação preventiva de recursos médicos")
@@ -910,73 +860,36 @@ else:
     print("      • Ativação de protocolos de emergência")
 
 # Cenários de alavancagem
-print("\n📈 CENÁRIOS DE ALAVANCAGEM DE CASOS:")
+print("\n CENÁRIOS DE ALAVANCAGEM DE CASOS:")
 if melhor_modelo[0] == 'Exponencial' and k > 0:
     casos_atual = y[-1]
     for mult in [2, 5, 10]:
         tempo_para_mult = np.log(mult) / k
-        print(f"   🔥 {mult}x casos atuais ({mult * casos_atual:.0f}): {tempo_para_mult:.1f} dias")
+        print(f"    {mult}x casos atuais ({mult * casos_atual:.0f}): {tempo_para_mult:.1f} dias")
 elif melhor_modelo[0] == 'Linear' and slope > 0:
     casos_atual = y[-1]
     for mult in [2, 5, 10]:
         casos_alvo = mult * casos_atual
         tempo_para_mult = (casos_alvo - casos_atual) / slope
-        print(f"   📊 {mult}x casos atuais ({casos_alvo:.0f}): {tempo_para_mult:.1f} dias")
+        print(f"    {mult}x casos atuais ({casos_alvo:.0f}): {tempo_para_mult:.1f} dias")
 else:
-    print("   ✅ Modelo atual não indica crescimento acelerado")
+    print("    Modelo atual não indica crescimento acelerado")
 
-print("\n💡 RECOMENDAÇÕES PARA SAÚDE PÚBLICA:")
+print("\n RECOMENDAÇÕES PARA SAÚDE PÚBLICA:")
 if melhor_modelo[1] > 0.8:
-    print("   ✅ Modelo confiável para tomada de decisões")
-    print("   ✅ Pode ser usado para projeções de curto prazo")
-    print("   ✅ Recomenda-se implementar ações preventivas baseadas nas projeções")
+    print("    Modelo confiável para tomada de decisões")
+    print("    Pode ser usado para projeções de curto prazo")
+    print("    Recomenda-se implementar ações preventivas baseadas nas projeções")
 elif melhor_modelo[1] > 0.6:
-    print("   ⚠️  Modelo moderadamente confiável")
-    print("   ⚠️  Usar com cautela para planejamento")
-    print("   ⚠️  Combinar com outras fontes de informação")
+    print("     Modelo moderadamente confiável")
+    print("     Usar com cautela para planejamento")
+    print("     Combinar com outras fontes de informação")
 else:
-    print("   ❌ Modelo pouco confiável")
-    print("   ❌ Necessário mais dados ou modelos alternativos")
-    print("   ❌ Focar em monitoramento intensivo ao invés de predições")
+    print("    Modelo pouco confiável")
+    print("    Necessário mais dados ou modelos alternativos")
+    print("    Focar em monitoramento intensivo ao invés de predições")
 
-print("\n🎯 ALINHAMENTO COM MATERIAL DO PROFESSOR:")
-print("   ✓ Regressão Linear: scipy.stats.linregress")
-print("   ✓ Ajuste Exponencial: Linearização via ln(y)")
-print("   ✓ Ajustes Polinomiais: numpy.polyfit (graus 2-5)")
-print("   ✓ Comparação por R² e interpretação estatística")
-print("   ✓ Visualização comparativa dos modelos")
-
-# 9. STORYTELLING: VALOR PARA GESTORES DE SAÚDE PÚBLICA
-print("\n" + "="*60)
-print("🎭 STORYTELLING: O VALOR DO EPICURVE ANALYZER")
-print("="*60)
-
-print("\n💼 CENÁRIO REAL DE APLICAÇÃO:")
-print(f"\n🏥 Você é gestor de saúde de {cidade_selecionada}...")
-print("\n📞 É sexta-feira, 17h. Seu telefone toca:")
-print('   "Secretário, os casos estão subindo. O que fazemos?"')
-
-print("\n⏰ ANTES do EpiCurve Analyzer:")
-print("   ❌ Reunião de emergência no final de semana")
-print("   ❌ Análise manual demorada (2-3 dias)")
-print("   ❌ Decisões baseadas em 'intuição'")
-print("   ❌ Recursos alocados de forma reativa")
-print("   ❌ População informada apenas após confirmação")
-
-print("\n✅ DEPOIS do EpiCurve Analyzer:")
-print("   🚀 Análise automatizada em 30 segundos")
-if melhor_modelo[1] > 0.8:
-    print(f"   📊 Predição confiável (R² = {melhor_modelo[1]:.3f})")
-    print("   📋 Relatório executivo instantâneo")
-    print("   🎯 Decisões baseadas em dados científicos")
-    print("   ⚡ Ações preventivas implementadas na segunda-feira")
-    print("   📢 Comunicação transparente com dados precisos")
-else:
-    print(f"   📊 Identificação imediata de limitações (R² = {melhor_modelo[1]:.3f})")
-    print("   🔍 Ativação automática de monitoramento intensivo")
-    print("   ⚠️  Protocolos de emergência ativados preventivamente")
-
-print("\n💰 IMPACTO ECONÔMICO DA PREDIÇÃO:")
+print("\n IMPACTO ECONÔMICO DA PREDIÇÃO:")
 
 # IMPLEMENTAÇÃO UNIVERSAL - Funciona para todos os modelos
 if 'pred_futuro' in locals() and pred_futuro is not None and len(pred_futuro) > 0:
@@ -1034,16 +947,16 @@ if 'pred_futuro' in locals() and pred_futuro is not None and len(pred_futuro) > 
     vidas_potencialmente_salvas = casos_uti * 0.32  # 32% mortalidade UTI evitada
     leitos_uti_poupados = casos_uti * 0.65         # 65% redução com preparação
     
-    print(f"   📊 Projeção 14 dias: {casos_projetados_14:.0f} casos")
-    print(f"   🏥 Distribuição: {casos_ambulatoriais:.0f} ambulat. | {casos_hospitalizacao:.0f} intern. | {casos_uti:.0f} UTI")
-    print(f"   💰 Custo total estimado: {formatar_valor_economico(custo_total)}")
+    print(f"    Projeção 14 dias: {casos_projetados_14:.0f} casos")
+    print(f"    Distribuição: {casos_ambulatoriais:.0f} ambulat. | {casos_hospitalizacao:.0f} intern. | {casos_uti:.0f} UTI")
+    print(f"    Custo total estimado: {formatar_valor_economico(custo_total)}")
     print(f"       ├─ Tratamento direto: {formatar_valor_economico(custo_tratamento)}")
     print(f"       └─ Perda produtividade: {formatar_valor_economico(custo_indireto)}")
     economia_formatada = formatar_valor_economico(economia_deteccao_precoce)
-    print(f"   💡 Economia c/ EpiCurve: {economia_formatada} ({taxa_economia*100:.1f}%)")
+    print(f"    Economia c/ EpiCurve: {economia_formatada} ({taxa_economia*100:.1f}%)")
     print(f"       ├─ Fatores: R²={r2_atual:.3f} | Escala={fator_escala:.2f}x | Urgência={fator_urgencia:.2f}x")
-    print(f"   📈 ROI do investimento: {multiplicador_roi}x (confiabilidade: {confiabilidade})")
-    print(f"   ❤️  Impacto social: ~{vidas_potencialmente_salvas:.0f} vidas | {leitos_uti_poupados:.0f} leitos poupados")
+    print(f"    ROI do investimento: {multiplicador_roi}x (confiabilidade: {confiabilidade})")
+    print(f"     Impacto social: ~{vidas_potencialmente_salvas:.0f} vidas | {leitos_uti_poupados:.0f} leitos poupados")
     
 else:
     # Fallback: estimativa baseada em dados históricos recentes
@@ -1057,48 +970,39 @@ else:
     custo_total_estimado = casos_estimados_14 * custo_medio_caso
     economia_conservadora = custo_total_estimado * 0.15  # 15% economia mínima
     
-    print(f"   📊 Estimativa conservadora (14 dias): {casos_estimados_14:.0f} casos")
-    print(f"   💰 Custo estimado: {formatar_valor_economico(custo_total_estimado)}")
-    print(f"   💡 Economia mínima garantida: {formatar_valor_economico(economia_conservadora)}")
-    print(f"   📈 ROI conservador: 75x o investimento")
-    print(f"   ⚠️  Análise baseada em média histórica (predição limitada)")
+    print(f"    Estimativa conservadora (14 dias): {casos_estimados_14:.0f} casos")
+    print(f"    Custo estimado: {formatar_valor_economico(custo_total_estimado)}")
+    print(f"    Economia mínima garantida: {formatar_valor_economico(economia_conservadora)}")
+    print(f"    ROI conservador: 75x o investimento")
+    print(f"     Análise baseada em média histórica (predição limitada)")
 
-print("\n🌟 DIFERENCIAL COMPETITIVO:")
-print("   🎓 Baseado em métodos científicos validados")
-print("   🔬 Transparência total na metodologia")
-print("   📱 Interface simples para gestores não-técnicos")
-print("   🔄 Atualizável com novos dados diariamente")
-print("   🌐 Aplicável a qualquer cidade do dataset")
+print("\n DIFERENCIAL COMPETITIVO:")
+print("    Baseado em métodos científicos validados")
+print("    Transparência total na metodologia")
+print("    Interface simples para gestores não-técnicos")
+print("    Atualizável com novos dados diariamente")
+print("    Aplicável a qualquer cidade do dataset")
 
-print(f"\n📈 PRECISÃO QUANTIFICADA:")
+print(f"\n PRECISÃO QUANTIFICADA:")
 melhor_metricas_final = melhor_metricas if melhor_metricas else melhor_metricas_precision
 if melhor_metricas_final:
-    print(f"   🎯 Erro médio: ±{melhor_metricas_final['MAE']:.1f} casos/dia")
-    print(f"   📊 Erro percentual: {melhor_metricas_final['MAPE']:.1f}%")
-    print(f"   🔍 Desvio padrão: {melhor_metricas_final['RMSE']:.1f} casos")
+    print(f"    Erro médio: ±{melhor_metricas_final['MAE']:.1f} casos/dia")
+    print(f"    Erro percentual: {melhor_metricas_final['MAPE']:.1f}%")
+    print(f"    Desvio padrão: {melhor_metricas_final['RMSE']:.1f} casos")
 
 if melhor_metricas_final and melhor_metricas_final.get('MAPE', 100) < 20:
-    print("   ✅ PRECISÃO EXCELENTE: Confiança total para decisões")
+    print("    PRECISÃO EXCELENTE: Confiança total para decisões")
 elif melhor_metricas_final and melhor_metricas_final.get('MAPE', 100) < 40:
-    print("   ⚠️  PRECISÃO BOA: Adequada para planejamento")
+    print("     PRECISÃO BOA: Adequada para planejamento")
 else:
-    print("   ❌ PRECISÃO LIMITADA: Foco em monitoramento intensivo")
-
-print("\n🚀 PRÓXIMOS PASSOS RECOMENDADOS:")
-print("   1. 📊 Implementar dashboard em tempo real")
-print("   2. 📱 Desenvolver app móvel para gestores")
-print("   3. 🤖 Integrar alertas automáticos por WhatsApp/SMS")
-print("   4. 🌐 Expandir para outros indicadores (óbitos, internações)")
-print("   5. 🎓 Treinar equipes em interpretação de resultados")
+    print("    PRECISÃO LIMITADA: Foco em monitoramento intensivo")
 
 print("\n" + "="*60)
-print("🎯 EPICURVE ANALYZER - MISSÃO CUMPRIDA")
-print("✨ Transformando dados em decisões que salvam vidas")
+print(" EPICURVE ANALYZER - MISSÃO CUMPRIDA")
+print(" Transformando dados em decisões que salvam vidas")
 print("")
-print("📊 Projeto Numbiosis - Cálculo Numérico")
-print("🌟 IMAGINAR • CRIAR • IMPACTAR")
-print("")
-print(f"🏆 Melhor modelo: {melhor_modelo[0]} (R² = {melhor_modelo[1]:.3f})")
-print(f"📍 Cidade analisada: {cidade_selecionada}")
-print(f"📅 Dados processados: {len(x)} registros")
+
+print(f" Melhor modelo: {melhor_modelo[0]} (R² = {melhor_modelo[1]:.3f})")
+print(f" Cidade analisada: {cidade_selecionada}")
+print(f" Dados processados: {len(x)} registros")
 print("="*60)

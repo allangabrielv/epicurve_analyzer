@@ -1,12 +1,10 @@
 import pandas as pd
 import numpy as np
 
-# Carregar e examinar o dataset
 print("=" * 60)
 print("ANÁLISE EXPLORATÓRIA DO DATASET caso_full.csv.gz")
 print("=" * 60)
 
-# Carregar dados
 df = pd.read_csv('caso_full.csv.gz')
 
 print(f"\n1. INFORMAÇÕES BÁSICAS:")
