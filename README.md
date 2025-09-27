@@ -16,10 +16,43 @@ Implementar e comparar métodos de ajuste de curvas para modelagem epidemiológi
 
 ### Diferencial
 - **Análise automatizada** de precisão com métricas RMSE, MAE e MAPE
-- **Predições futuras** para os próximos 14 dias
+- **Predições futuras de disseminação** para os próximos 14 dias
 - **Interpretação epidemiológica** completa dos resultados
 - **Impacto econômico** quantificado das decisões baseadas em dados
 - **Visualizações interativas** para gestores de saúde pública e instituições
+
+---
+
+## Sobre o Dataset (Conjunto de Dados)
+
+O caso_full.csv.gz é um dataset epidemiológico fornecido pelo Ministério da Saúde contendo registros históricos de casos relacionados à COVID-19. O arquivo foi projetado para análise de tendências epidemiológicas e modelagem preditiva.
+O Conjunto de Dados contém **3.8 Milhões de Registros** de Reports Municipais Diários, para todas as **5570 cidades** do país. O arquivo bruto foi extraído diretamente do **DataSUS**.
+O Período epidemiológico analisado se inicia em **24 de fevereiro de 2020** e se estende até **27 de fevereiro de 2022**.
+
+### Estrutura : Dados tabulares organizados por localização geográfica e período temporal
+**Características Técnicas:**
+- **Tamanho em memória**: 1.39 GB
+- **Número de registros**: 3,853,648 (Reports)
+- **Número de colunas**: 18
+   **Colunas Disponíveis:**
+  1. `city` - Nome do município
+  2. `city_ibge_code` - Código IBGE da cidade
+  3. `date` - Data do registro (YYYY-MM-DD)
+  4. `epidemiological_week` - Semana epidemiológica
+  5. `estimated_population` - População estimada atual
+  6. `estimated_population_2019` - População estimada em 2019
+  7. `is_last` - Indica se é o último registro
+  8. `is_repeated` - Indica registro repetido
+  9. `last_available_confirmed` - Últimos casos confirmados disponíveis
+  10. `last_available_confirmed_per_100k_inhabitants` - Casos por 100k habitantes
+  11. `last_available_date` - Data do último registro disponível
+  12. `last_available_death_rate` - Taxa de mortalidade mais recente
+  13. `last_available_deaths` - Óbitos mais recentes
+  14. `order_for_place` - Ordem cronológica por localização
+  15. `place_type` - Tipo de localização (município/estado)
+  16. `state` - Estado (UF)
+  17. `new_confirmed` - **Novos casos confirmados** (variável-alvo principal)
+  18. `new_deaths` - Novos óbitos
 
 ---
 
@@ -152,7 +185,7 @@ linear_regression_project/
 ├── README.md                        # Este arquivo
 ├── modelagem_epidemias_dataset.py   # Script principal
 ├── examinar_dataset.py              # Script de verificação
-├── caso_full.csv.gz                # Dataset (3.8M registros)
+├── caso_full.csv.gz                # Dataset (3.8M de Reports)
 ├── material_ajuste_de_curvas.ipynb # Material-base do projeto
 ├── assets/                        # Imagens do dashboard do projeto
 └── requirements.txt                 # Dependências (opcional)
