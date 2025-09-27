@@ -171,6 +171,9 @@ python modelagem_epidemias_dataset.py
  ROI da ferramenta: 300x o investimento
 ```
 ---
+
+## Imagens-exemplo do Dashboard para a cidade de Fortaleza - CE
+
 ![](/assets/Figure_1.png)
 ---
 ![](/assets/Figure_2.png)
