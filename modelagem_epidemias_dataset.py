@@ -86,6 +86,63 @@ def interpretar_metricas(r2):
     else:
         return 'Muito Fraco (<0.3)', '⚫'
 
+def formatar_valor_economico(valor):
+    """Formata valores econômicos de forma inteligente"""
+    if valor >= 1000000000:  # Bilhões
+        return f"R$ {valor/1000000000:.2f}B"
+    elif valor >= 100000000:  # Centenas de milhões
+        return f"R$ {valor/1000000:.0f}M"
+    elif valor >= 10000000:   # Dezenas de milhões
+        return f"R$ {valor/1000000:.1f}M"
+    elif valor >= 1000000:    # Milhões
+        return f"R$ {valor/1000000:.2f}M"
+    elif valor >= 100000:     # Centenas de milhares
+        return f"R$ {valor/1000:.0f}K"
+    elif valor >= 10000:      # Dezenas de milhares
+        return f"R$ {valor/1000:.1f}K"
+    else:                     # Milhares ou menos
+        return f"R$ {valor:,.0f}"
+
+def calcular_taxa_economia_dinamica(r2, casos_projetados, populacao_estimada=None):
+    """Calcula taxa de economia dinâmica baseada em múltiplos fatores"""
+    # Taxa base por R²
+    if r2 >= 0.9:
+        taxa_base = 0.52  # 52% para modelos excelentes
+    elif r2 >= 0.7:
+        taxa_base = 0.45  # 45% para modelos bons
+    elif r2 >= 0.5:
+        taxa_base = 0.35  # 35% para modelos moderados
+    elif r2 >= 0.3:
+        taxa_base = 0.25  # 25% para modelos fracos
+    elif r2 >= 0.1:
+        taxa_base = 0.15  # 15% para modelos muito fracos mas utilizáveis
+    else:
+        taxa_base = 0.08  # 8% economia mínima
+    
+    # Ajuste por escala de casos (cidades pequenas têm mais eficiência relativa)
+    if casos_projetados <= 10:
+        fator_escala = 1.3    # +30% para cidades muito pequenas
+    elif casos_projetados <= 50:
+        fator_escala = 1.2    # +20% para cidades pequenas
+    elif casos_projetados <= 200:
+        fator_escala = 1.1    # +10% para cidades médias
+    elif casos_projetados <= 1000:
+        fator_escala = 1.0    # Taxa padrão
+    else:
+        fator_escala = 0.85   # -15% para grandes centros (mais complexo)
+    
+    # Ajuste por urgência (mais casos = maior economia potencial)
+    if casos_projetados >= 500:
+        fator_urgencia = 1.15  # +15% para situações críticas
+    elif casos_projetados >= 100:
+        fator_urgencia = 1.08  # +8% para situações preocupantes
+    else:
+        fator_urgencia = 1.0   # Taxa padrão
+    
+    taxa_final = min(taxa_base * fator_escala * fator_urgencia, 0.65)  # Máximo 65%
+    
+    return taxa_final, fator_escala, fator_urgencia
+
 # FUNÇÃO MODELO_ENSEMBLE - DESATIVADA (causava relatórios estranhos)
 # def modelo_ensemble(x, y, modelos_dict, pesos=None):
 #     """Combina múltiplos modelos por ensemble"""
@@ -742,13 +799,14 @@ if 'pred_futuro' in locals() and pred_futuro is not None and len(pred_futuro) > 
     ax4.set_title(f'Impacto Econômico - 14 dias\nEconomia: R$ {economia_deteccao_precoce:,.0f}')
     ax4.set_ylabel('Custo Total Estimado (R$)')
     
-    # Adicionar valores nas barras
+    # Adicionar valores nas barras com formatação inteligente
     for i, v in enumerate(custos):
-        ax4.text(i, v + max(custos)*0.02, f'R$ {v/1000000:.1f}M', 
+        valor_formatado = formatar_valor_economico(v)
+        ax4.text(i, v + max(custos)*0.02, valor_formatado, 
                 ha='center', va='bottom', fontweight='bold')
     
     # Adicionar percentual de economia
-    ax4.text(0.5, max(custos)*0.8, f'Economia: {taxa_economia*100:.0f}%', 
+    ax4.text(0.5, max(custos)*0.8, f'Economia: {taxa_economia*100:.1f}%', 
             ha='center', va='center', transform=ax4.transData, 
             bbox=dict(boxstyle='round', facecolor='yellow', alpha=0.7),
             fontsize=12, fontweight='bold')
@@ -950,23 +1008,25 @@ if 'pred_futuro' in locals() and pred_futuro is not None and len(pred_futuro) > 
     custo_indireto = casos_projetados_14 * custo_indireto_produtividade
     custo_total = custo_tratamento + custo_indireto
     
-    # Economia baseada na qualidade do modelo (R²)
-    if melhor_metricas.get('R²', 0) >= 0.7:      # Alta precisão
-        taxa_economia = 0.45  # 45% economia
+    # Economia dinâmica baseada em múltiplos fatores
+    r2_atual = melhor_metricas.get('R²', 0)
+    taxa_economia, fator_escala, fator_urgencia = calcular_taxa_economia_dinamica(
+        r2_atual, casos_projetados_14
+    )
+    
+    # Determinação da confiabilidade e ROI
+    if r2_atual >= 0.7:
         confiabilidade = "Alta"
-        multiplicador_roi = 250
-    elif melhor_metricas.get('R²', 0) >= 0.4:    # Precisão moderada  
-        taxa_economia = 0.32  # 32% economia
+        multiplicador_roi = int(250 * fator_escala)
+    elif r2_atual >= 0.4:
         confiabilidade = "Moderada"
-        multiplicador_roi = 180
-    elif melhor_metricas.get('R²', 0) >= 0.2:    # Precisão baixa mas utilizável
-        taxa_economia = 0.18  # 18% economia
+        multiplicador_roi = int(180 * fator_escala)
+    elif r2_atual >= 0.2:
         confiabilidade = "Baixa"
-        multiplicador_roi = 95
-    else:                                 # Precisão muito baixa
-        taxa_economia = 0.08  # 8% economia (monitoramento básico)
-        confiabilidade = "Muito Baixa"
-        multiplicador_roi = 40
+        multiplicador_roi = int(120 * fator_escala)
+    else:
+        confiabilidade = "Limitada"
+        multiplicador_roi = int(60 * fator_escala)
     
     economia_deteccao_precoce = custo_total * taxa_economia
     
@@ -976,10 +1036,12 @@ if 'pred_futuro' in locals() and pred_futuro is not None and len(pred_futuro) > 
     
     print(f"   📊 Projeção 14 dias: {casos_projetados_14:.0f} casos")
     print(f"   🏥 Distribuição: {casos_ambulatoriais:.0f} ambulat. | {casos_hospitalizacao:.0f} intern. | {casos_uti:.0f} UTI")
-    print(f"   💰 Custo total estimado: R$ {custo_total:,.0f}")
-    print(f"       ├─ Tratamento direto: R$ {custo_tratamento:,.0f}")
-    print(f"       └─ Perda produtividade: R$ {custo_indireto:,.0f}")
-    print(f"   💡 Economia c/ EpiCurve: R$ {economia_deteccao_precoce:,.0f} ({taxa_economia*100:.0f}%)")
+    print(f"   💰 Custo total estimado: {formatar_valor_economico(custo_total)}")
+    print(f"       ├─ Tratamento direto: {formatar_valor_economico(custo_tratamento)}")
+    print(f"       └─ Perda produtividade: {formatar_valor_economico(custo_indireto)}")
+    economia_formatada = formatar_valor_economico(economia_deteccao_precoce)
+    print(f"   💡 Economia c/ EpiCurve: {economia_formatada} ({taxa_economia*100:.1f}%)")
+    print(f"       ├─ Fatores: R²={r2_atual:.3f} | Escala={fator_escala:.2f}x | Urgência={fator_urgencia:.2f}x")
     print(f"   📈 ROI do investimento: {multiplicador_roi}x (confiabilidade: {confiabilidade})")
     print(f"   ❤️  Impacto social: ~{vidas_potencialmente_salvas:.0f} vidas | {leitos_uti_poupados:.0f} leitos poupados")
     
@@ -996,8 +1058,8 @@ else:
     economia_conservadora = custo_total_estimado * 0.15  # 15% economia mínima
     
     print(f"   📊 Estimativa conservadora (14 dias): {casos_estimados_14:.0f} casos")
-    print(f"   💰 Custo estimado: R$ {custo_total_estimado:,.0f}")
-    print(f"   💡 Economia mínima garantida: R$ {economia_conservadora:,.0f}")
+    print(f"   💰 Custo estimado: {formatar_valor_economico(custo_total_estimado)}")
+    print(f"   💡 Economia mínima garantida: {formatar_valor_economico(economia_conservadora)}")
     print(f"   📈 ROI conservador: 75x o investimento")
     print(f"   ⚠️  Análise baseada em média histórica (predição limitada)")
 
