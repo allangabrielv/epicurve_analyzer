@@ -95,7 +95,7 @@ python modelagem_epidemias_dataset.py
 
 ## Metodologia Científica
 
-### Alinhamento com da Disciplina e Módulo do LVMN
+### Alinhamento com a Disciplina e Módulo do LVMN
 - **scipy.stats.linregress**: Regressão linear completa
 - **numpy.polyfit**: Ajustes polinomiais de múltiplos graus
 - **Linearização exponencial**: Transformação ln(y) vs x
@@ -137,7 +137,9 @@ python modelagem_epidemias_dataset.py
  Economia potencial: R$ 2.450.000
  ROI da ferramenta: 300x o investimento
 ```
-
+![](/assets/Figure_1.png)
+![](/assets/Figure_2.png)
+![](/assets/Figure_3.png)
 ---
 
 ## Estrutura do Projeto
