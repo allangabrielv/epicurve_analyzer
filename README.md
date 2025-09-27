@@ -1,7 +1,5 @@
 #  EpiCurve Analyzer - Projeto de Cálculo Numérico
 
-**Transformando dados em decisões que salvam vidas**
-
 ---
 
 ## Sobre o Projeto
