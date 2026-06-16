@@ -1,6 +1,14 @@
-numpy>=1.21.0
-pandas>=1.3.0
-matplotlib>=3.4.0
+# Dependências do seminário de Séries Temporais
+numpy>=1.21
+pandas>=1.3
+scipy>=1.7
+matplotlib>=3.4
+seaborn>=0.12
+statsmodels>=0.14
+scikit-learn>=1.0
 
-scipy>=1.7.0
-scikit-learn>=1.0.0
+# Instale com:  pip install -r requirements.txt
+#
+# Para COMPILAR os slides é necessária uma distribuição LaTeX (ex.: MiKTeX
+# ou TeX Live) com o tema beamer "metropolis". No MiKTeX os pacotes são
+# baixados automaticamente na primeira compilação.
