@@ -1,290 +1,143 @@
-#  EpiCurve Analyzer - Projeto de Cálculo Numérico
+# EpiCurve Analyzer — Séries Temporais aplicadas à COVID-19
+
+Seminário de **Séries Temporais** construído sobre uma série real: os **casos
+diários de COVID-19 no estado de São Paulo** (DataSUS / Brasil.IO). O projeto
+nasceu de um trabalho de *Cálculo Numérico* (ajuste de curvas / regressão
+linear) e foi **adaptado** para cobrir toda a ementa de séries temporais — da
+**regressão linear simples** até o **SARIMAX**.
+
+> **Entregável principal:** a apresentação em LaTeX/Beamer
+> [`slides/seminario_series_temporais.pdf`](slides/seminario_series_temporais.pdf)
+> (48 slides), gerada a partir das figuras e dos números produzidos pelos
+> scripts em [`src/`](src/).
 
 ---
 
-## Sobre o Projeto
+## Cobertura da ementa
 
-O **EpiCurve Analyzer** é uma ferramenta desenvolvida para o projeto da disciplina de Cálculo Numérico, seguindo a metodologia do LMVN (Laboratório Virtual de Métodos Numéricos) do Prof. Dr. Gustavo Charles Peixoto de Oliveira, docente da Cadeira de Cálculo Numérico para o Curso de Ciência da Computação da UFPB.
+| Tópico da ementa | Onde está | Figura(s) |
+|---|---|---|
+| Introdução aos modelos de séries temporais | Slides §1; conceitos + estudo de caso | `01` |
+| Análise exploratória e estacionariedade (ADF/KPSS) | Slides §2 | `02`, `03`, `04` |
+| **Regressão linear simples** (modelo de tendência) | Slides §3; `secao_regressao_linear` | `05`, `06` |
+| Alisamento exponencial (SES, Holt, Holt-Winters) | Slides §4; `secao_alisamento` | `07` |
+| Médias móveis (MA) e função de autocorrelação (ACF) | Slides §5–6; `secao_acf_pacf` | `08`, `09` |
+| Autorregressivos (AR) e autocorrelação parcial (PACF) | Slides §7 | `09` |
+| ARMA | Slides §8 | — |
+| ARIMA | Slides §9; `secao_arima_familia` | `10`, `11` |
+| Sazonalidade: SARMA e SARIMA | Slides §10 | `10` |
+| Modelagem com variáveis exógenas (SARIMAX) | Slides §11; `secao_exogena_obitos` | `12`, `14` |
+| Comparação de modelos e conclusões | Slides §12 | `13` |
 
-### Objetivo
-Implementar e comparar métodos de ajuste de curvas para modelagem epidemiológica, utilizando exclusivamente as técnicas abordadas em aula:
-- **Regressão Linear** (`scipy.stats.linregress`)
-- **Ajuste Exponencial** via linearização logarítmica
-- **Ajustes Polinomiais** (`numpy.polyfit`) de graus 2 a 5
-
-### Diferencial
-- **Análise automatizada** de precisão com métricas RMSE, MAE e MAPE
-- **Predições futuras de disseminação** para os próximos 14 dias
-- **Interpretação epidemiológica** dos resultados
-- **Impacto econômico** quantificado das decisões baseadas em dados
-- **Visualizações interativas** para gestores de saúde pública e instituições
-
----
-
-## Sobre o Dataset (Conjunto de Dados)
-
-O caso_full.csv.gz é um dataset epidemiológico fornecido pelo Ministério da Saúde contendo registros históricos de casos relacionados à COVID-19. O arquivo foi projetado para análise de tendências epidemiológicas e modelagem preditiva.
-O Conjunto de Dados contém **3.8 Milhões de Registros** de Reports Municipais Diários, para todas as **5570 cidades** do país. O arquivo bruto foi extraído diretamente do **DataSUS (SEIDIGI) - TABNET**.
-O Período epidemiológico analisado se inicia em **24 de fevereiro de 2020** e se estende até **27 de fevereiro de 2022**.
-
-### Estrutura : Dados tabulares organizados por localização geográfica e período temporal
-**Características Técnicas:**
-- **Tamanho em memória**: 1.39 GB
-- **Número de registros**: 3,853,648 (Reports)
-- **Número de colunas**: 18
-   **Colunas Disponíveis:**
-  1. `city` - Nome do município
-  2. `city_ibge_code` - Código IBGE da cidade
-  3. `date` - Data do registro (YYYY-MM-DD)
-  4. `epidemiological_week` - Semana epidemiológica
-  5. `estimated_population` - População estimada atual
-  6. `estimated_population_2019` - População estimada em 2019
-  7. `is_last` - Indica se é o último registro
-  8. `is_repeated` - Indica registro repetido
-  9. `last_available_confirmed` - Últimos casos confirmados disponíveis
-  10. `last_available_confirmed_per_100k_inhabitants` - Casos por 100k habitantes
-  11. `last_available_date` - Data do último registro disponível
-  12. `last_available_death_rate` - Taxa de mortalidade mais recente
-  13. `last_available_deaths` - Óbitos mais recentes
-  14. `order_for_place` - Ordem cronológica por localização
-  15. `place_type` - Tipo de localização (município/estado)
-  16. `state` - Estado (UF)
-  17. `new_confirmed` - **Novos casos confirmados** (variável-alvo principal)
-  18. `new_deaths` - Novos óbitos
+A **regressão linear simples** é o elo com a disciplina de origem: além do
+modelo de tendência `y = β₀ + β₁·t`, mostramos a **linearização** do
+crescimento exponencial (`ln y = ln A + k·t`) e usamos o teste de
+**Durbin-Watson** para evidenciar a autocorrelação dos resíduos — a motivação
+para todo o restante do seminário.
 
 ---
 
-## Pré-requisitos
+## Estrutura do projeto
 
-### Bibliotecas Python necessárias:
+```
+Epicurve-analyzer/
+├── README.md
+├── requirements.txt
+├── caso_full.csv.gz                 # dataset bruto (DataSUS/Brasil.IO, ~3,85M registros)
+├── src/
+│   ├── preparar_dados.py            # extrai e limpa a série diária (UF) -> dados/serie_*.csv
+│   └── analise_series_temporais.py  # toda a análise; gera figuras/ e dados/resultados.json
+├── dados/
+│   ├── serie_sp.csv                 # série diária pronta (casos e óbitos)
+│   └── resultados.json              # números exatos usados nos slides
+├── figuras/                         # 14 figuras (PNG) geradas pela análise
+├── slides/
+│   ├── seminario_series_temporais.tex
+│   └── seminario_series_temporais.pdf
+└── (legado de Cálculo Numérico)
+    ├── modelagem_epidemias_dataset.py
+    ├── examinar_dataset.py
+    └── material_ajuste_de_curvas.ipynb
+```
+
+---
+
+## Como executar
+
+### 1. Instalar dependências
 ```bash
-pip install pandas numpy scipy matplotlib scikit-learn
+pip install -r requirements.txt
 ```
 
-### Arquivos necessários:
-- `caso_full.csv.gz` - Dataset com dados epidemiológicos
-- `modelagem_epidemias_dataset.py` - Script principal
-
----
-
-## Como Executar
-
-### Passo 1: Preparação
-1. Certifique-se de que o arquivo `caso_full.csv.gz` está na pasta do projeto
-2. Instale as dependências listadas acima
-
-### Passo 2: Execução
+### 2. Preparar a série temporal
+Lê o `caso_full.csv.gz` e gera `dados/serie_sp.csv` (use `--uf` para outra UF):
 ```bash
-python modelagem_epidemias_dataset.py
+python src/preparar_dados.py --uf SP
 ```
 
-### Passo 3: Interação
-- O sistema irá listar algumas das cidades disponíveis
-- Digite o nome de uma cidade ou pressione Enter para usar a padrão
-- Aguarde a análise automática ser executada
-
----
-
-## Funcionalidades
-
-### 1. Análise Exploratória
-- Carregamento e limpeza automática dos dados
-- Visualização inicial da distribuição de casos
-- Seleção interativa de cidade para análise
-
-### 2. Modelagem Matemática
-- **Linear**: Identifica tendências de crescimento/declínio
-- **Exponencial**: Calcula taxa de crescimento e tempo de duplicação
-- **Polinomial**: Estima picos epidêmicos (grau 2) e curvas complexas
-
-### 3. Análise de Precisão
-- **R²**: Coeficiente de determinação
-- **RMSE**: Raiz do erro quadrático médio
-- **MAE**: Erro absoluto médio
-- **MAPE**: Erro percentual absoluto médio
-
-### 4. Predições Futuras
-- Projeções para os próximos 14 dias
-- Cenários de alavancagem de casos
-- Estimativa de tempo para dobrar/triplicar casos
-
-### 5. Impacto Econômico
-- Cálculo de custos evitados com ação preventiva
-- ROI (Retorno sobre Investimento) da ferramenta
-- Comparação de cenários com/sem intervenção
-
-### 6. Visualizações
-- **6 gráficos especializados**:
-  1. Dados originais e análise inicial
-  2. Comparação Linear vs Exponencial
-  3. Todos os ajustes polinomiais
-  4. Melhor modelo destacado
-  5. Projeções futuras com zona de incerteza
-  6. Dashboard de precisão (2x2)
-
----
-
-## Metodologia Científica
-
-### Alinhamento com a Disciplina e Módulo do LVMN
-- **scipy.stats.linregress**: Regressão linear completa
-- **numpy.polyfit**: Ajustes polinomiais de múltiplos graus
-- **Linearização exponencial**: Transformação ln(y) vs x
-- **Comparação por R²**: Critério de seleção do melhor modelo
-- **Interpretação estatística**: Significado epidemiológico
-
----
-
-## Exemplo de Uso
-
-```python
-# Execução automática:
-python modelagem_epidemias_dataset.py
-
-# Saída esperada:
-  CIDADES DISPONÍVEIS PARA ANÁLISE:
-1. São Paulo - 1000 registros
-2. Rio de Janeiro - 800 registros
-...
-
- Digite o nome da cidade (ou Enter para São Paulo): 
-
- PROCESSANDO DADOS...
- Dados carregados: 1000 registros válidos
-
- RESULTADOS DA MODELAGEM:
- Melhor modelo: Polinômio Grau 2 (R² = 0.891)
- Erro médio: ±12.3 casos/dia
- Pico estimado: Dia 45 com 287 casos
-
- IMPACTO ECONÔMICO:
- Economia potencial: R$ 2.450.000
- ROI da ferramenta: 300x o investimento
+### 3. Rodar toda a análise (gera figuras + resultados)
+```bash
+python src/analise_series_temporais.py
 ```
+
+### 4. Compilar os slides (requer LaTeX, ex.: MiKTeX)
+A partir da raiz do projeto, rode **duas vezes** (para o sumário):
+```bash
+pdflatex -output-directory=slides slides/seminario_series_temporais.tex
+pdflatex -output-directory=slides slides/seminario_series_temporais.tex
+```
+
 ---
 
-## Imagens-exemplo do Dashboard para a cidade de Fortaleza - CE
+## Principais resultados (backtest de 28 dias — nov/2021)
 
-![](/assets/Figure_1.png)
+| Modelo | RMSE | MAPE | AIC |
+|---|---:|---:|---:|
+| SES | 725 | 80% | — |
+| Holt | 709 | 83% | — |
+| **Holt-Winters** | **498** | **40%** | — |
+| ARIMA(2,1,2) | 714 | 79% | 1877 |
+| SARIMA(2,1,2)(1,1,1)₇ | 567 | 40% | 1663 |
+| SARIMAX (+feriados) | 566 | 40% | 1665 |
+
+- Os modelos que tratam a **sazonalidade semanal** (Holt-Winters, SARIMA,
+  SARIMAX) reduzem o erro em ~30% frente aos não-sazonais.
+- **Variáveis exógenas** (exemplo óbitos ~ casos): o AIC cai de **1257 → 1011**
+  e o RMSE −7%, ilustrando o ganho quando a covariável traz informação nova —
+  ao contrário dos feriados, cujo efeito é mínimo (−0,5%) pois a sazonalidade
+  já o captura.
+
 ---
-![](/assets/Figure_2.png)
----
-![](/assets/Figure_3.png)
----
 
-## Desafios
-### Subnotificação Sistemática:
-- **Casos assintomáticos**: Grande parcela não testada (~40-60% dos casos reais)
-- **Testagem limitada**: Capacidade diagnóstica insuficiente, especialmente 2020-2021
-- **Acesso desigual**: Populações vulneráveis com menor acesso a testes
-- **Casos leves**: Muitos não procuram assistência médica
+## Sobre o Dataset
 
-### Defasagem e Acúmulo de Reports:
-- **Atraso de notificação**: 3-7 dias entre ocorrência e registro oficial
-- **Reports acumulados**: Backlog de casos notificados em lotes
-- **Fins de semana e Feriados**: Redução artificial nos sábados/domingos e distorções em períodos festivos
-- **Regularização posterior**: Correções retroativas alteram histórico
-- **Revisões retroativas**: Reclassificação de casos suspeitos
+`caso_full.csv.gz` — registros diários de COVID-19 por município/estado
+(DataSUS / SEIDIGI–TABNET, via Brasil.IO).
 
+- **Período:** 25/02/2020 a 27/03/2022 · **~3,85 milhões** de registros · 18 colunas.
+- **Recorte do seminário:** nível **estadual de SP** → série **diária** com
+  **762 observações** (casos e óbitos novos), contínua e sem lacunas.
+- **Variável-alvo:** `new_confirmed` (casos novos/dia); exógena de exemplo:
+  `new_deaths`.
 
-### Dependência de Infraestrutura Local:
-- **Secretarias municipais**: Capacidade técnica heterogênea
-- **Sistemas de informação**: SIVEP, e-SUS, GAL com inconsistências
-- **Recursos humanos**: Equipes sobrecarregadas em períodos críticos
-- **Padronização**: Critérios diagnósticos variam entre regiões
-
-### Viés de Detecção Regional:
-- **Capacidade laboratorial**: Grandes centros vs interior
-- **Protocolos de testagem**: Mudanças de critério ao longo do tempo
-- **Estratégias de vigilância**: Testagem ativa vs passiva
-- **Recursos financeiros**: Orçamento municipal para vigilância epidemiológica
-- **Duplicações**: Mesmo caso notificado em múltiplos sistemas
-
-### Fatores Socioeconômicos Não Capturados:
-- **Mobilidade populacional**: Fluxos migratórios não registrados
-- **Densidade demográfica**: Variações intramunicipais significativas
-- **Condições habitacionais**: Aglomeração e ventilação inadequada
-- **Acesso a saúde**: Cobertura e qualidade dos serviços locais
-- **Comportamento social**: Adesão a medidas preventivas
-
-### Limitações Técnicas :
-- **Definição de "novo caso"**: Critérios podem variar
-- **Classificação final**: Confirmado vs provável vs descartado
-- **Geocoding**: Problemas na identificação municipal precisa
+### Por que há sazonalidade semanal?
+A subnotificação de fins de semana e feriados (menos testagem/registro, com
+divulgação represada na semana seguinte) cria um padrão **semanal (s=7)**
+sistemático no *processo de medição* — domingo ≈ 0,49× e quinta ≈ 1,38× a média
+semanal. É justamente o que torna esta série ideal para demonstrar
+**SARIMA/SARIMAX**.
 
 ---
 
 ## Referências
 
-### Subnotificação de Casos
-
-**Li, R., Pei, S., Chen, B., et al. (2020)**  
-*"Substantial undocumented infection facilitates the rapid dissemination of novel coronavirus (SARS-CoV-2)"*  
-Revela que a subnotificação é um fenômeno comum em vigilância epidemiológica.
-[10.1126/science.abb3221](https://doi.org/10.1126/science.abb3221) 
-
-**Maugeri, A., Barchitta, M., Battiato, S., et al. (2020)**  
-*"Modeling the novel coronavirus (COVID-19) outbreak in Sicily, Italy"*  
-Desenvolve métodos estatísticos para correção da subnotificação em dados epidemiológicos regionais.
-[PMID:32660125](https://pubmed.ncbi.nlm.nih.gov/32660125) 
-
-### Casos Leves/Assintomáticos Não Detectados
-
-**Byambasuren, O., Cardona, M., Bell, K., et al. (2020)**  
-*"Estimating the extent of asymptomatic COVID-19 and its potential for community transmission: systematic review and meta-analysis"*  
-Quantifica a proporção de casos assintomáticos (estimativa: 20-40%), fundamentando a necessidade de ajustes em modelos epidemiológicos baseados apenas em casos sintomáticos notificados.
-[PMID:36340059](https://pubmed.ncbi.nlm.nih.gov/36340059)
-
-**Oran, D.P., Topol, E.J. (2020)**  
-*"Prevalence of asymptomatic SARS-CoV-2 infection: a narrative review"*  
-Compila evidências sobre a prevalência de infecções assintomáticas.
-[PMID:32491919](https://pubmed.ncbi.nlm.nih.gov/32491919)
-
-### Redução Artificial em Finais de Semana e Atrasos de Notificação
-
-**Bastos, S.B., Cajueiro, D.O. (2020)**  
-*"Modeling and forecasting the early evolution of the Covid-19 pandemic in Brazil"*  
-Analisa padrões de notificação no Brasil, identificando reduções sistemáticas em finais de semana e feriados que afetam a qualidade dos dados para modelagem.
-[Bastos & Cajueiro (2020) - Scientific Reports](https://www.nature.com/articles/s41598-020-76257-1)
-
-**Dehning, J., Zierenberg, J., Spitzner, F.P., et al. (2020)**  
-*"Inferring change points in the spread of COVID-19 reveals the effectiveness of interventions"*  
-Desenvolve métodos estatísticos para correção de atrasos de notificação em séries temporais epidemiológicas.
-[10.1126/science.abb9789](https://www.science.org/doi/10.1126/science.abb9789)
-
-### Acesso Desigual aos Cuidados de Saúde
-
-**Webb Hooper, M., Nápoles, A.M., Pérez-Stable, E.J. (2020)**  
-*"COVID-19 and Racial/Ethnic Disparities"*  
-Documenta disparidades significativas no acesso a testagem e cuidados médicos entre diferentes grupos socioeconômicos.
-[Webb Hooper et al. (2020) - JAMA](https://jamanetwork.com/journals/jama/fullarticle/2766098)
-
-**Mackey, K., Ayers, C.K., Kondo, K.K., et al. (2021)**  
-*"Racial and Ethnic Disparities in COVID-19-Related Infections, Hospitalizations, and Deaths: A Systematic Review"*  
-Revisão sistemática que quantifica disparidades no acesso aos serviços de saúde durante a pandemia.
-[PMID:33253040](https://pubmed.ncbi.nlm.nih.gov/33253040)
-
-### Fontes Oficiais do Ministério da Saúde
-
-- **DATASUS**: [datasus.saude.gov.br](https://datasus.saude.gov.br/)
-- **TABNET**: [Informações de Saúde](https://datasus.saude.gov.br/informacoes-de-saude-tabnet/)
-- **INFOMS COVID-19**: [Painel COVID-19](https://infoms.saude.gov.br/extensions/covid-19_html/covid-19_html.html)
-- **Portal COVID-19**: [covid.saude.gov.br](https://covid.saude.gov.br/)
+- BOX, JENKINS, REINSEL, LJUNG. *Time Series Analysis: Forecasting and Control*. 5ª ed. Wiley, 2015.
+- MORETTIN, P. A.; TOLOI, C. M. C. *Análise de Séries Temporais*. 3ª ed. Blucher, 2018.
+- HYNDMAN, R. J.; ATHANASOPOULOS, G. *Forecasting: Principles and Practice*. 3ª ed. OTexts, 2021 — [otexts.com/fpp3](https://otexts.com/fpp3/).
+- BROCKWELL, P. J.; DAVIS, R. A. *Introduction to Time Series and Forecasting*. 3ª ed. Springer, 2016.
+- **Dados:** DATASUS [datasus.saude.gov.br](https://datasus.saude.gov.br/) · Brasil.IO [brasil.io/dataset/covid19](https://brasil.io/dataset/covid19/).
 
 ---
 
-## Estrutura do Projeto
-
-```
-linear_regression_project/
-├── README.md                        # Este arquivo
-├── modelagem_epidemias_dataset.py   # Script principal
-├── examinar_dataset.py              # Script de verificação
-├── caso_full.csv.gz                # Dataset (3.8M de Reports)
-├── material_ajuste_de_curvas.ipynb # Material-base do projeto
-├── assets/                        # Imagens do dashboard do projeto
-└── requirements.txt                 # Dependências (opcional)
-
-```
-
----
+> **Nota:** edite o autor/instituição no início de
+> `slides/seminario_series_temporais.tex` antes de apresentar.

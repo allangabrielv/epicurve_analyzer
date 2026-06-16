@@ -1,0 +1,734 @@
+%=======================================================================
+%  EpiCurve Analyzer — Seminário de Séries Temporais  (estilo PITCH)
+%  Da Regressão Linear ao SARIMAX — aplicação à COVID-19
+%
+%  Compilar:  pdflatex -output-directory=slides slides/seminario_series_temporais.tex  (2x)
+%  Requer LaTeX (MiKTeX/TeX Live) com: beamer, inconsolata, tcolorbox, tikz.
+%=======================================================================
+\documentclass[aspectratio=169,11pt]{beamer}
+\usetheme{default}
+\setbeamertemplate{navigation symbols}{}
+\beamertemplatenavigationsymbolsempty
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[brazilian]{babel}
+\usepackage{amsmath,amssymb}
+\usepackage{inconsolata}            % fonte monoespaçada dos títulos
+\usepackage{tikz}
+\usepackage[most]{tcolorbox}
+\usepackage{graphicx}
+\usepackage{xcolor}
+
+\graphicspath{{../figuras/}{figuras/}{./figuras/}}
+
+%----------------------------- Paleta -----------------------------------
+\definecolor{fundo}{HTML}{070707}
+\definecolor{pitchred}{HTML}{C81E1E}    % vermelho estrutural (bordas/réguas)
+\definecolor{emph}{HTML}{FF5C5C}        % vermelho de destaque em texto
+\definecolor{verde}{HTML}{43D17A}       % verde (bom)
+\definecolor{pill}{HTML}{C9C9C9}        % cinza do "pill" do título
+\definecolor{clight}{HTML}{D7D7D7}      % texto auxiliar
+
+\setbeamercolor{background canvas}{bg=fundo}
+\setbeamercolor{normal text}{fg=white}
+\setbeamercolor{frametitle}{fg=white}
+\setbeamercolor{itemize item}{fg=pitchred}
+\setbeamercolor{itemize subitem}{fg=pitchred}
+\setbeamercolor{enumerate item}{fg=pitchred}
+\setbeamerfont{frametitle}{series=\bfseries}
+\setbeamertemplate{itemize item}{\small\raisebox{0.15ex}{\color{pitchred}$\blacktriangleright$}}
+\setbeamertemplate{itemize subitem}{\color{pitchred}\textbullet}
+
+%--------------------------- Fundo (vírus) ------------------------------
+\setbeamertemplate{background}{%
+  \includegraphics[width=\paperwidth,height=\paperheight]{fundo_virus.png}%
+}
+
+%------------------------- Título das frames ----------------------------
+\setbeamertemplate{frametitle}{%
+  \vspace*{0.55em}\leavevmode%
+  \hbox{\hspace*{0.35em}%
+    \tikz{\node[fill=pill,rounded corners=2.5pt,inner sep=0pt,
+                minimum width=17pt,minimum height=9pt]{};}%
+    \hspace{0.5em}{\ttfamily\bfseries\insertframetitle}}\par
+  \vspace*{0.18em}\hspace*{0.35em}{\color{pitchred}\rule{0.955\paperwidth}{1.3pt}}%
+}
+
+%------------------------------ Rodapé ----------------------------------
+\setbeamertemplate{footline}{%
+  \hfill{\ttfamily\tiny\color{clight}\insertframenumber\hspace*{1.2em}}\vspace*{0.4em}%
+}
+
+%--------------------------- Estilos tcolorbox --------------------------
+\tcbset{
+  pitchbox/.style={enhanced, colback=white, opacityback=0.10,
+    colframe=white, opacityframe=0.30, boxrule=0.6pt, arc=3.2mm,
+    coltext=white, left=3mm, right=3mm, top=1.8mm, bottom=1.8mm},
+  pitchtitled/.style={enhanced, colback=white, opacityback=0.10,
+    colframe=pitchred, boxrule=1pt, arc=3.2mm, coltext=white,
+    title filled, colbacktitle=pitchred, coltitle=white,
+    fonttitle=\ttfamily\bfseries\small, left=3mm, right=3mm, top=1.6mm, bottom=1.6mm},
+  alertbox/.style={enhanced, colback=pitchred, opacityback=0.16,
+    colframe=pitchred, boxrule=1pt, arc=3.2mm, coltext=white,
+    left=3mm, right=3mm, top=1.6mm, bottom=1.6mm},
+  labelbox/.style={enhanced, colback=white, colframe=pitchred, boxrule=1.3pt,
+    arc=2.6mm, coltext=black, fontupper=\ttfamily\bfseries,
+    left=2.4mm, right=2.4mm, top=0.7mm, bottom=0.7mm, nobeforeafter, box align=center},
+  figbox/.style={enhanced, colback=white, colframe=pitchred, boxrule=1.8pt,
+    arc=2mm, left=1mm, right=1mm, top=1mm, bottom=1mm},
+}
+
+%------------------------------ Macros ----------------------------------
+\newcommand{\B}{\mathcal{B}}
+\newcommand{\dest}[1]{\textcolor{emph}{\textbf{#1}}}
+\newcommand{\bom}[1]{\textcolor{verde}{\textbf{#1}}}
+\newcommand{\callout}[1]{\tcbox[labelbox]{#1}}
+\newcommand{\figura}[2][\linewidth]{\begin{tcolorbox}[figbox]\centering\includegraphics[width=#1]{#2}\end{tcolorbox}}
+\newcommand{\figalt}[2]{\begin{tcolorbox}[figbox]\centering\includegraphics[height=#1]{#2}\end{tcolorbox}}
+\newcommand{\eqbox}[1]{\begin{center}\begin{tcolorbox}[enhanced,colback=white,opacityback=0.06,
+   colframe=pitchred,boxrule=1.1pt,arc=2mm,coltext=white,width=0.92\linewidth,halign=center,
+   top=1.4mm,bottom=1.4mm]$\displaystyle #1$\end{tcolorbox}\end{center}}
+
+%----------------------- Divisória de seção -----------------------------
+\AtBeginSection[]{%
+  \begin{frame}[plain]
+    \centering\vfill
+    {\color{pitchred}\rule{0.16\paperwidth}{2pt}}\\[0.7em]
+    {\ttfamily\bfseries\Huge\color{white}\insertsectionhead}\\[0.5em]
+    {\color{pitchred}\rule{0.16\paperwidth}{2pt}}
+    \vfill
+  \end{frame}%
+}
+
+\begin{document}
+
+%========================= CAPA =========================================
+\begin{frame}[plain]
+  \vfill
+  \begin{center}
+    \begin{tcolorbox}[enhanced,colback=white,opacityback=0.10,colframe=white,
+        opacityframe=0.32,arc=6mm,width=0.86\paperwidth,halign=center,top=6mm,bottom=6mm,center]
+      {\ttfamily\bfseries\fontsize{36}{40}\selectfont EpiCurve Analyzer}
+    \end{tcolorbox}
+    \vspace{0.7em}
+    \begin{tcolorbox}[enhanced,colback=white,opacityback=0.10,colframe=white,
+        opacityframe=0.32,arc=4mm,width=0.74\paperwidth,halign=center,top=1.4mm,bottom=1.4mm,center]
+      {\ttfamily\small Séries Temporais: da Regressão Linear ao SARIMAX}
+    \end{tcolorbox}
+  \end{center}
+  \vfill
+  {\centering\color{clight}
+   {\footnotesize Allan Vasconcelos}\\[0.3em]
+   {\scriptsize\ttfamily Universidade Federal da Paraíba (UFPB) — Seminário de Séries Temporais — 2026}\par}
+  \vspace{0.6em}
+\end{frame}
+
+\begin{frame}{Roteiro}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \tableofcontents[sections={1-6}]
+    \column{0.5\textwidth}
+      \tableofcontents[sections={7-12}]
+  \end{columns}
+\end{frame}
+
+%=======================================================================
+\section{Introdução aos modelos de séries temporais}
+%=======================================================================
+
+\begin{frame}{O que é uma série temporal?}
+  \begin{tcolorbox}[pitchtitled,title=Definição]
+    Uma \dest{série temporal} é uma sequência de observações de uma variável
+    indexadas no tempo e \dest{ordenadas cronologicamente}:
+    \eqbox{\{y_t\}_{t=1}^{n} = y_1, y_2, \ldots, y_n .}
+  \end{tcolorbox}
+  \vspace{0.4em}
+  A característica essencial é a \dest{dependência temporal}: observações
+  próximas tendem a ser correlacionadas — o que \dest{viola} a hipótese de
+  independência da estatística clássica.
+  \begin{itemize}
+    \item \textbf{Exemplos:} casos diários de uma doença, PIB, temperatura, ações.
+    \item \textbf{Objetivos:} descrever, explicar a estrutura e, sobretudo,
+          \dest{prever} ($\hat{y}_{n+h}$).
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Componentes de uma série temporal}
+  \eqbox{y_t = \underbrace{T_t}_{\text{tend\^encia}} + \underbrace{S_t}_{\text{sazonal}}
+        + \underbrace{C_t}_{\text{ciclo}} + \underbrace{\varepsilon_t}_{\text{ru\'ido}}
+        \quad\text{(aditiva)};\qquad y_t = T_t\cdot S_t\cdot\varepsilon_t\ \text{(multiplicativa)}}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \begin{tcolorbox}[pitchbox]
+        \textbf{Tendência $T_t$}: movimento de longo prazo.\\[0.3em]
+        \textbf{Sazonalidade $S_t$}: padrão que se repete em período fixo $s$.
+      \end{tcolorbox}
+    \column{0.5\textwidth}
+      \begin{tcolorbox}[pitchbox]
+        \textbf{Ciclo $C_t$}: oscilações de período não fixo (ondas).\\[0.3em]
+        \textbf{Irregular $\varepsilon_t$}: ruído aleatório.
+      \end{tcolorbox}
+  \end{columns}
+  \vspace{0.3em}
+  \centering\footnotesize A forma multiplicativa vira aditiva no \dest{logaritmo}:
+  $\log y_t=\log T_t+\log S_t+\log\varepsilon_t$.
+\end{frame}
+
+\begin{frame}{Três abordagens — o fio condutor}
+  \begin{enumerate}
+    \item \textbf{Decomposição / Regressão} — modela tendência e sazonalidade
+          explicitamente. \emph{Partimos da regressão linear simples.}
+    \item \textbf{Alisamento exponencial} — médias com pesos que decaem (SES,
+          Holt, Holt-Winters).
+    \item \textbf{Box--Jenkins (ARIMA)} — modela diretamente a
+          \dest{autocorrelação}: AR, MA, ARMA, ARIMA, SARIMA, SARIMAX.
+  \end{enumerate}
+  \begin{tcolorbox}[alertbox]
+    \textbf{Estudo de caso:} aplicaremos \dest{todos} esses modelos aos
+    \dest{casos diários de COVID-19 em São Paulo}.
+  \end{tcolorbox}
+\end{frame}
+
+\begin{frame}{Estudo de caso: COVID-19 em São Paulo}
+  \begin{columns}[T]
+    \column{0.42\textwidth}
+      \begin{tcolorbox}[pitchbox]
+        \footnotesize
+        \textbf{Fonte:} DataSUS / Brasil.IO (\texttt{caso\_full.csv.gz}).
+        \begin{itemize}\footnotesize
+          \item $\approx 3{,}85$ mi de registros municipais.
+          \item Recorte: \dest{estado de SP} (agregado).
+          \item \dest{25/02/2020 a 27/03/2022}; $n=762$ dias.
+          \item $5{,}23$ mi de casos; $167$ mil óbitos.
+          \item Pico: \dest{37.611 casos} (03/02/2022).
+        \end{itemize}
+        Série diária $\Rightarrow$ \dest{sazonalidade semanal} ($s=7$).
+      \end{tcolorbox}
+    \column{0.58\textwidth}
+      \figura{01_serie_casos.png}
+  \end{columns}
+\end{frame}
+
+%=======================================================================
+\section{Análise exploratória e estacionariedade}
+%=======================================================================
+
+\begin{frame}{Sazonalidade semanal: o efeito da notificação}
+  \begin{columns}[T]
+    \column{0.6\textwidth}
+      \figura{02_sazonalidade_semanal.png}
+    \column{0.4\textwidth}
+      \begin{tcolorbox}[pitchbox]
+        \footnotesize
+        \dest{Quedas sistemáticas} nos fins de semana: menos testagem/registro,
+        com represamento divulgado na semana seguinte.
+        \[\text{domingo}\approx0{,}49\times\overline{\text{média}}\]
+        \[\text{quinta}\approx1{,}38\times\overline{\text{média}}\]
+        Sazonalidade do \dest{processo de medição}, não da epidemia.
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Perfil sazonal por dia da semana}
+  \figura[0.66\linewidth]{03_efeito_dia_semana.png}
+  \centering\footnotesize\color{clight}
+  Fator multiplicativo médio (1,0 = média semanal): segunda e domingo
+  concentram a subnotificação.
+\end{frame}
+
+\begin{frame}{Decomposição da série}
+  \begin{columns}[T]
+    \column{0.62\textwidth}
+      \figura{04_decomposicao.png}
+    \column{0.38\textwidth}
+      \begin{tcolorbox}[pitchbox]
+        \footnotesize
+        Decomposição aditiva de $\log(1+\text{casos})$, período $s=7$:
+        \begin{itemize}\footnotesize
+          \item \textbf{Tendência}: as ondas epidêmicas.
+          \item \textbf{Sazonal}: padrão semanal estável.
+          \item \textbf{Resíduo}: choques irregulares.
+        \end{itemize}
+        O \dest{log} estabiliza a variância (sazonalidade multiplicativa).
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Estacionariedade}
+  \begin{columns}[T]
+    \column{0.54\textwidth}
+      \begin{tcolorbox}[pitchtitled,title=Estacionariedade fraca]
+        \footnotesize Média, variância e autocovariâncias \dest{não dependem do tempo}:
+        \[\mathbb{E}[y_t]=\mu,\ \operatorname{Var}(y_t)=\sigma^2,\ \operatorname{Cov}(y_t,y_{t+k})=\gamma_k.\]
+      \end{tcolorbox}
+      \footnotesize É \dest{pré-requisito} para a modelagem ARMA.
+      \begin{itemize}\footnotesize
+        \item \textbf{ADF}: $H_0=$ raiz unitária (não estacionária).
+        \item \textbf{KPSS}: $H_0=$ estacionária (hipóteses trocadas).
+      \end{itemize}
+    \column{0.46\textwidth}
+      \begin{tcolorbox}[alertbox]
+        \footnotesize\textbf{Resultados (SP)}\\
+        Em nível: ADF $p=0{,}002$ vs.\ KPSS $p=0{,}044$ — \dest{divergem}
+        (a sazonalidade confunde os testes).\\[0.4em]
+        Após $1^{\mathrm a}$ diferença: ADF $p<0{,}001$
+        \bom{$\Rightarrow$ estacionária}.
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+%=======================================================================
+\section{Regressão linear simples}
+%=======================================================================
+
+\begin{frame}{Regressão linear simples: o modelo de tendência}
+  Ajustamos uma \dest{reta} à série em função do tempo:
+  \eqbox{y_t=\beta_0+\beta_1\,t+\varepsilon_t}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \begin{tcolorbox}[pitchbox]
+        \footnotesize Estimação por \dest{mínimos quadrados} (MQO):
+        \[\hat\beta_1=\frac{\sum_t(t-\bar t)(y_t-\bar y)}{\sum_t(t-\bar t)^2},\quad
+          \hat\beta_0=\bar y-\hat\beta_1\bar t\]
+      \end{tcolorbox}
+    \column{0.5\textwidth}
+      \begin{tcolorbox}[pitchbox]
+        \footnotesize Qualidade do ajuste:
+        \[R^2=1-\frac{\sum_t(y_t-\hat y_t)^2}{\sum_t(y_t-\bar y)^2}\in[0,1]\]
+      \end{tcolorbox}
+  \end{columns}
+  \centering\footnotesize\color{clight}
+  Mesma base da disciplina de origem: \texttt{scipy.stats.linregress} e \texttt{statsmodels.OLS}.
+\end{frame}
+
+\begin{frame}{Regressão linear: tendência de casos em SP}
+  \begin{columns}[T]
+    \column{0.62\textwidth}
+      \figura{05_regressao_linear.png}
+    \column{0.38\textwidth}
+      \begin{tcolorbox}[pitchbox]
+        \footnotesize Janela 01/11/2020--31/03/2021 ($n=151$):
+        \[\widehat{\text{casos}}=3469+\dest{73{,}3}\,t\]
+        \begin{itemize}\footnotesize
+          \item Tendência \dest{$+73$ casos/dia} ($p<10^{-12}$).
+          \item IC 95\%: $[55{,}3;\,91{,}2]$.
+          \item $R^2=\dest{0{,}30}$ (diário).
+          \item $R^2=\bom{0{,}77}$ (média móvel 7d).
+        \end{itemize}
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Por que a regressão simples não basta}
+  \begin{columns}[T]
+    \column{0.54\textwidth}
+      O MQO supõe erros \dest{independentes} — o que quase nunca vale em séries
+      temporais. A estatística de \dest{Durbin--Watson}:
+      \eqbox{d=\frac{\sum_{t=2}^{n}(e_t-e_{t-1})^2}{\sum_t e_t^2}\approx 2(1-\hat\rho_1)}
+      $d\approx2$: sem autocorrelação. Aqui $d=\dest{1{,}40}$.
+    \column{0.46\textwidth}
+      \begin{tcolorbox}[alertbox]
+        \textbf{Consequência}\\
+        Resíduos \dest{autocorrelacionados} (padrão semanal) $\Rightarrow$
+        erros-padrão subestimados e previsões pobres.
+      \end{tcolorbox}
+      \begin{tcolorbox}[pitchbox]
+        \textbf{Conclusão:} precisamos de modelos que tratem a
+        \dest{dependência temporal}. \emph{É o resto do seminário.}
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Ponte com Cálculo Numérico: linearização}
+  \begin{columns}[T]
+    \column{0.6\textwidth}
+      \figura{06_linearizacao_exponencial.png}
+    \column{0.4\textwidth}
+      \begin{tcolorbox}[pitchbox]
+        \footnotesize No início de uma onda o crescimento é \dest{exponencial},
+        $y=A\,e^{kt}$. O logaritmo \dest{lineariza}:
+        \[\ln y=\ln A+k\,t\]
+        e aplicamos regressão linear em $(t,\ln y)$.\\[0.4em]
+        Ômicron: $k=0{,}174$/dia, $R^2=0{,}59$, duplicação $\approx\dest{4{,}0}$ dias.
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+%=======================================================================
+\section{Alisamento exponencial}
+%=======================================================================
+
+\begin{frame}{Alisamento exponencial simples (SES)}
+  A previsão é uma \dest{média ponderada} do passado, com pesos que
+  \dest{decaem exponencialmente}:
+  \eqbox{\hat y_{t+1}=\alpha\,y_t+(1-\alpha)\hat y_t,\qquad 0<\alpha<1}
+  Forma de componente de nível: $\ \ell_t=\alpha y_t+(1-\alpha)\ell_{t-1},\quad \hat y_{t+h}=\ell_t$.
+  \begin{itemize}
+    \item $\alpha\to1$: reage rápido; $\alpha\to0$: muito suave.
+    \item Adequado a séries \dest{sem tendência nem sazonalidade} — precisamos estender.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Holt e Holt--Winters}
+  \begin{tcolorbox}[pitchtitled,title=Holt (tendência)]
+    \footnotesize
+    \[\ell_t=\alpha y_t+(1-\alpha)(\ell_{t-1}+b_{t-1}),\quad
+      b_t=\beta(\ell_t-\ell_{t-1})+(1-\beta)b_{t-1},\quad \hat y_{t+h}=\ell_t+h\,b_t\]
+  \end{tcolorbox}
+  \begin{tcolorbox}[pitchtitled,title={Holt--Winters (tendência + sazonalidade $s_t$, período $m$)}]
+    \footnotesize
+    \[s_t=\gamma(y_t-\ell_{t-1}-b_{t-1})+(1-\gamma)s_{t-m},\quad
+      \hat y_{t+h}=\ell_t+hb_t+s_{t+h-m(\lfloor(h-1)/m\rfloor+1)}\]
+  \end{tcolorbox}
+  \centering\footnotesize\color{clight}
+  Usamos \dest{tendência amortecida} e modelamos em $\log(1+\text{casos})$.
+\end{frame}
+
+\begin{frame}{Alisamento exponencial: previsão de 28 dias}
+  \begin{columns}[T]
+    \column{0.6\textwidth}
+      \figura{07_alisamento_exponencial.png}
+    \column{0.4\textwidth}
+      \begin{tcolorbox}[pitchbox]
+        \footnotesize
+        \begin{tabular}{lcc}
+          \textbf{Modelo} & $\alpha$ & \textbf{RMSE}\\[0.2em]
+          SES & 0,23 & 725\\
+          Holt & 0,14 & 709\\
+          \bom{Holt--Winters} & 0,24 & \bom{498}\\
+        \end{tabular}\\[0.6em]
+        Só o \dest{Holt--Winters} capta o padrão semanal — reduz o erro em
+        $\sim$30\%. A sazonalidade é a estrutura \dest{dominante}.
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+%=======================================================================
+\section{Autocorrelação: ACF e PACF}
+%=======================================================================
+
+\begin{frame}{Ruído branco, autocovariância e ACF}
+  \begin{tcolorbox}[pitchtitled,title=Ruído branco]
+    \footnotesize $\varepsilon_t$ i.i.d., média 0, variância $\sigma^2$, sem
+    autocorrelação — o "tijolo" dos modelos.
+  \end{tcolorbox}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \textbf{ACF} — correlação com a defasagem $k$:
+      \eqbox{\rho_k=\frac{\gamma_k}{\gamma_0}=\frac{\operatorname{Cov}(y_t,y_{t-k})}{\operatorname{Var}(y_t)}}
+    \column{0.5\textwidth}
+      \textbf{PACF} $\phi_{kk}$ — correlação entre $y_t$ e $y_{t-k}$ \dest{removido}
+      o efeito das defasagens intermediárias.
+  \end{columns}
+  \centering\footnotesize\color{clight}
+  O \dest{correlograma} (ACF/PACF) é a principal ferramenta de identificação.
+\end{frame}
+
+\begin{frame}{ACF e PACF da série de SP}
+  \figalt{0.72\textheight}{09_acf_pacf.png}
+  \centering\scriptsize\color{clight}
+  Em nível: ACF decai \dest{lentamente} (não estacionária). Na $1^{\mathrm a}$
+  diferença: picos em \dest{7, 14, 21} $\Rightarrow$ \dest{sazonalidade semanal}.
+\end{frame}
+
+%=======================================================================
+\section{Modelos de médias móveis (MA)}
+%=======================================================================
+
+\begin{frame}{Filtro de média móvel \texorpdfstring{$\neq$}{vs} modelo MA(q)}
+  \begin{columns}[T]
+    \column{0.58\textwidth}
+      \figura{08_media_movel_filtro.png}
+    \column{0.42\textwidth}
+      \begin{tcolorbox}[alertbox]
+        \footnotesize\textbf{Cuidado com a ambiguidade!}
+      \end{tcolorbox}
+      \begin{tcolorbox}[pitchbox]
+        \footnotesize
+        \begin{itemize}\footnotesize
+          \item \textbf{Filtro} de média móvel: técnica \emph{descritiva} de
+                suavização (remove o ruído semanal).
+          \item \textbf{Modelo} MA($q$): processo \emph{estocástico} baseado em
+                \dest{choques} passados.
+        \end{itemize}
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Modelo de médias móveis MA(q)}
+  \eqbox{y_t=\mu+\varepsilon_t+\theta_1\varepsilon_{t-1}+\cdots+\theta_q\varepsilon_{t-q}
+        =\mu+\theta(\B)\,\varepsilon_t}
+  $\B$ é o \dest{operador de retardo} ($\B y_t=y_{t-1}$);
+  $\theta(\B)=1+\theta_1\B+\cdots+\theta_q\B^q$.
+  \begin{itemize}
+    \item Combinação linear de \dest{choques aleatórios} — "memória" de tamanho $q$.
+    \item É \dest{sempre estacionário}.
+    \item \dest{Identificação:} a \textbf{ACF corta} após a defasagem $q$;
+          a PACF decai gradualmente.
+  \end{itemize}
+\end{frame}
+
+%=======================================================================
+\section{Modelos autorregressivos (AR)}
+%=======================================================================
+
+\begin{frame}{Modelo autorregressivo AR(p)}
+  $y_t$ é regredido sobre seus \dest{próprios valores passados}:
+  \eqbox{y_t=c+\phi_1 y_{t-1}+\cdots+\phi_p y_{t-p}+\varepsilon_t
+        \;\Longleftrightarrow\; \phi(\B)\,y_t=c+\varepsilon_t}
+  \begin{itemize}
+    \item \textbf{Estacionariedade:} raízes de $\phi(\B)=0$ \dest{fora do círculo
+          unitário} (AR(1): $|\phi_1|<1$).
+    \item \dest{Identificação} (simétrica ao MA): a \textbf{PACF corta} após $p$;
+          a ACF decai gradualmente.
+  \end{itemize}
+  \begin{tcolorbox}[pitchbox]
+    \footnotesize\textbf{Dualidade:} AR($p$) estacionário $=$ MA($\infty$); MA($q$)
+    invertível $=$ AR($\infty$). Por isso combinamos os dois.
+  \end{tcolorbox}
+\end{frame}
+
+%=======================================================================
+\section{Modelos ARMA}
+%=======================================================================
+
+\begin{frame}{ARMA(p,q): juntando AR e MA}
+  \eqbox{\phi(\B)\,y_t=c+\theta(\B)\,\varepsilon_t}
+  \begin{columns}[T]
+    \column{0.55\textwidth}
+      \footnotesize\textbf{Identificação (Box--Jenkins):}
+      \begin{itemize}\footnotesize
+        \item ACF e PACF \dest{ambas decaem} $\Rightarrow$ ARMA.
+        \item Ordens $(p,q)$ por \dest{parcimônia} e critérios de informação:
+      \end{itemize}
+      \[\text{AIC}=-2\ln L+2k,\quad \text{BIC}=-2\ln L+k\ln n\]
+    \column{0.45\textwidth}
+      \begin{tcolorbox}[pitchbox]
+        \footnotesize \textbf{Ajustes ilustrativos} (série diferenciada):
+        \begin{tabular}{lc}
+          \textbf{Modelo} & \textbf{AIC}\\[0.2em]
+          \bom{AR(7)} & \bom{2373}\\
+          MA(7) & 2407\\
+          ARMA(2,2) & 2439\\
+        \end{tabular}\\[0.4em]
+        A componente em \emph{lag 7} pede estrutura \dest{sazonal} (SARIMA).
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+%=======================================================================
+\section{Modelos ARIMA}
+%=======================================================================
+
+\begin{frame}{Do ARMA ao ARIMA: a integração (I)}
+  Quando a série \dest{não é estacionária}, aplicamos a \dest{diferenciação}
+  $\Delta y_t=y_t-y_{t-1}=(1-\B)y_t$. Diferenciando $d$ vezes:
+  \eqbox{\phi(\B)\,(1-\B)^d\,y_t=c+\theta(\B)\,\varepsilon_t}
+  \begin{itemize}
+    \item $d$ = nº de diferenças para estacionarizar (em geral 1 ou 2).
+    \item AR\dest{I}MA = ARMA sobre a série \dest{diferenciada}.
+    \item Modelar $\log(1+y_t)$ \dest{estabiliza a variância} antes de diferenciar.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Metodologia de Box--Jenkins}
+  \begin{enumerate}
+    \item \dest{Identificação} — log + diferenciação ($d$); ler ACF/PACF para $(p,q)$.
+    \item \dest{Estimação} — parâmetros por máxima verossimilhança.
+    \item \dest{Diagnóstico} — resíduos devem ser \dest{ruído branco} (\textbf{Ljung--Box}).
+    \item \dest{Previsão} — $\hat y_{n+h}$ com intervalos de confiança.
+  \end{enumerate}
+  \eqbox{Q_{LB}=n(n+2)\sum_{k=1}^{m}\frac{\hat\rho_k^2}{n-k}\ \sim\ \chi^2_{m-(p+q)}
+        \quad(H_0:\text{res\'iduos n\~ao correlacionados})}
+\end{frame}
+
+\begin{frame}{Diagnóstico de resíduos do modelo ajustado}
+  \begin{columns}[T]
+    \column{0.62\textwidth}
+      \figura{11_diagnostico_residuos.png}
+    \column{0.38\textwidth}
+      \begin{tcolorbox}[pitchbox]
+        \footnotesize Resíduos do modelo sazonal:
+        \begin{itemize}\footnotesize
+          \item sem padrão temporal;
+          \item ACF dentro das bandas;
+          \item histograma/QQ $\approx$ normal.
+        \end{itemize}
+      \end{tcolorbox}
+      \begin{tcolorbox}[alertbox]
+        \footnotesize \textbf{Ljung--Box} (lag 14): $p=\bom{0{,}59}$
+        $\Rightarrow$ \bom{ruído branco — modelo adequado}.
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+%=======================================================================
+\section{Sazonalidade: SARMA e SARIMA}
+%=======================================================================
+
+\begin{frame}{Incorporando a sazonalidade: SARMA e SARIMA}
+  Adicionamos operadores \dest{sazonais} de período $s$ (aqui $s=7$):
+  \eqbox{\Phi_P(\B^s)\,\phi_p(\B)\,(1-\B)^d(1-\B^s)^D\,y_t
+        =\Theta_Q(\B^s)\,\theta_q(\B)\,\varepsilon_t}
+  \centering\textbf{\ttfamily SARIMA$(p,d,q)(P,D,Q)_s$}
+  \begin{itemize}
+    \item $(p,d,q)$: parte \dest{não sazonal}; $(P,D,Q)$: parte \dest{sazonal}.
+    \item $(1-\B^s)^D$: \dest{diferença sazonal} ($y_t-y_{t-7}$).
+    \item \textbf{SARMA}: caso com $d=D=0$. Usamos \dest{SARIMA$(2,1,2)(1,1,1)_7$}.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{ARIMA vs.\ SARIMA: o ganho da sazonalidade}
+  \begin{columns}[T]
+    \column{0.62\textwidth}
+      \figura{10_arima_sarima_previsao.png}
+    \column{0.38\textwidth}
+      \begin{tcolorbox}[pitchbox]
+        \footnotesize
+        \begin{tabular}{lcc}
+          \textbf{Modelo} & \textbf{AIC} & \textbf{RMSE}\\[0.2em]
+          ARIMA$(2,1,2)$ & 1877 & 714\\
+          \bom{SARIMA} & \bom{1663} & \bom{567}\\
+        \end{tabular}\\[0.5em]
+        O ARIMA prevê uma \dest{linha plana}; o SARIMA reproduz o
+        \dest{zigue-zague semanal} ($-20\%$ no erro). Faixa = IC 95\%.
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+%=======================================================================
+\section{Variáveis exógenas: SARIMAX}
+%=======================================================================
+
+\begin{frame}{Modelagem com variáveis exógenas (SARIMAX)}
+  \dest{Regressão dinâmica}: regressores externos $x_{j,t}$ + erro com estrutura SARIMA:
+  \eqbox{y_t=\sum_j \beta_j\,x_{j,t}+n_t,\qquad n_t\sim\text{SARIMA}(p,d,q)(P,D,Q)_s}
+  \begin{itemize}
+    \item Une o \dest{poder explicativo} de covariáveis à \dest{autocorrelação} do erro.
+    \item Exemplos: feriados, temperatura, mobilidade, outra série relacionada.
+    \item \dest{Atenção:} para prever é preciso conhecer o \dest{caminho futuro}
+          das exógenas.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Exógena 1 — feriados: quando \emph{não} ajuda}
+  \begin{columns}[T]
+    \column{0.6\textwidth}
+      \figura{12_sarimax_exogena.png}
+    \column{0.4\textwidth}
+      \begin{tcolorbox}[pitchbox]
+        \footnotesize Dummy de \dest{feriados nacionais} como exógena:
+        \begin{itemize}\footnotesize
+          \item coeficiente $-0{,}5\%$ — efeito \dest{pequeno};
+          \item RMSE igual ao SARIMA (566 vs 567).
+        \end{itemize}
+      \end{tcolorbox}
+      \begin{tcolorbox}[alertbox]
+        \footnotesize\textbf{Lição:} a sazonalidade já capta o calendário. Exógena
+        só agrega se trouxer \dest{informação nova}.
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Exógena 2 — casos $\to$ óbitos: quando \emph{ajuda}}
+  \begin{columns}[T]
+    \column{0.6\textwidth}
+      \figura{14_exogena_obitos.png}
+    \column{0.4\textwidth}
+      \begin{tcolorbox}[pitchbox]
+        \footnotesize Prever \dest{óbitos} usando o nº de \dest{casos} como
+        exógena (corr.\ log--log $=0{,}86$):
+        \begin{tabular}{lcc}
+          & \textbf{AIC} & \textbf{RMSE}\\[0.2em]
+          SARIMA & 1257 & 79,6\\
+          \bom{SARIMAX} & \bom{1011} & \bom{74,2}\\
+        \end{tabular}
+      \end{tcolorbox}
+      \begin{tcolorbox}[alertbox]
+        \footnotesize \dest{$-246$ no AIC} e $-7\%$ no RMSE: a covariável carrega
+        \dest{informação real}.
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+%=======================================================================
+\section{Comparação e conclusões}
+%=======================================================================
+
+\begin{frame}{Comparação geral dos modelos}
+  \begin{columns}[T]
+    \column{0.58\textwidth}
+      \figura{13_comparacao_modelos.png}
+    \column{0.42\textwidth}
+      \begin{tcolorbox}[pitchbox]
+        \scriptsize
+        \begin{tabular}{lcc}
+          \textbf{Modelo} & \textbf{RMSE} & \textbf{MAPE}\\[0.2em]
+          SES & 725 & 80\%\\
+          Holt & 709 & 83\%\\
+          \bom{Holt--Winters} & \bom{498} & \bom{40\%}\\
+          ARIMA$(2,1,2)$ & 714 & 79\%\\
+          SARIMA & 567 & 40\%\\
+          SARIMAX & 566 & 40\%\\
+        \end{tabular}\\[0.4em]
+        Os modelos \dest{sazonais} dominam. Sem modelo universal: vale a
+        \dest{parcimônia}.
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Conclusões}
+  \begin{itemize}
+    \item A \dest{regressão linear} acha a tendência, mas seus resíduos
+          autocorrelacionados ($d=1{,}40$) exigem modelos próprios de séries temporais.
+    \item \dest{Holt--Winters} e \dest{SARIMA} capturam a sazonalidade semanal e
+          foram os melhores ($-30\%$ de erro).
+    \item \dest{ACF/PACF} guiam $(p,d,q)(P,D,Q)_s$; o \dest{Ljung--Box} confirma a adequação.
+    \item Variáveis \dest{exógenas} (SARIMAX) ajudam só quando trazem informação
+          nova — feriados vs.\ casos$\to$óbitos.
+  \end{itemize}
+  \begin{tcolorbox}[alertbox]
+    \footnotesize\textbf{Limitações dos dados:} subnotificação, atraso de divulgação
+    e revisões retroativas geram a sazonalidade semanal e dificultam previsões longas.
+  \end{tcolorbox}
+\end{frame}
+
+\begin{frame}[fragile]{Reprodutibilidade}
+  Tudo é reproduzível em Python (\texttt{numpy, pandas, statsmodels, matplotlib}):
+  \begin{tcolorbox}[enhanced,colback=black,opacityback=0.55,colframe=pitchred,
+       boxrule=1pt,arc=2mm,coltext=white,fontupper=\ttfamily\footnotesize]
+\begin{verbatim}
+# 1) constrói a série diária a partir do dataset bruto
+python src/preparar_dados.py --uf SP
+
+# 2) roda toda a análise e gera figuras + resultados.json
+python src/analise_series_temporais.py
+\end{verbatim}
+  \end{tcolorbox}
+  \centering\footnotesize\color{clight}
+  Os números do seminário vêm de \texttt{dados/resultados.json}.
+\end{frame}
+
+\begin{frame}{Referências}
+  \footnotesize
+  \begin{itemize}\footnotesize
+    \item BOX, JENKINS, REINSEL, LJUNG. \textit{Time Series Analysis: Forecasting and Control}. 5ª ed. Wiley, 2015.
+    \item MORETTIN, P. A.; TOLOI, C. M. C. \textit{Análise de Séries Temporais}. 3ª ed. Blucher, 2018.
+    \item HYNDMAN, R. J.; ATHANASOPOULOS, G. \textit{Forecasting: Principles and Practice}. 3ª ed. OTexts, 2021.
+    \item BROCKWELL, P. J.; DAVIS, R. A. \textit{Introduction to Time Series and Forecasting}. 3ª ed. Springer, 2016.
+    \item \textbf{Dados:} DATASUS / Brasil.IO — \texttt{brasil.io/dataset/covid19}.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[plain]
+  \centering\vfill
+  \begin{tcolorbox}[enhanced,colback=white,opacityback=0.10,colframe=pitchred,
+      boxrule=1.5pt,arc=5mm,width=0.6\paperwidth,halign=center,top=5mm,bottom=5mm]
+    {\ttfamily\bfseries\Huge\color{white}Obrigado!}\\[0.6em]
+    {\large\color{clight}Perguntas?}
+  \end{tcolorbox}
+  \vfill
+\end{frame}
+
+\end{document}
