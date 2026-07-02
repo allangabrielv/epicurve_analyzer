@@ -1,0 +1,16 @@
+\frametitle{a mágica: uma linha}
+\begin{tcolorbox}[enhanced,colback=black,opacityback=0.55,colframe=pitchred,
+       boxrule=1pt,arc=2mm,coltext=white,fontupper=\ttfamily\footnotesize]
+\begin{verbatim}
+# o professor sugeriu isto:
+from lazypredict.Supervised import LazyRegressor
+modelos, _ = LazyRegressor().fit(X_tr, X_te, y_tr, y_te)
+\end{verbatim}
+  \end{tcolorbox}
+  \begin{columns}[c]
+    \column{0.40\textwidth}
+      {\large \dest{39 modelos} treinados e ranqueados sozinhos.}\\[0.4em]
+      {\color{clight} Em segundos, sem escolher nada à mão.}
+    \column{0.60\textwidth}
+      \figdk{lazy_01_leaderboard.png}
+  \end{columns}

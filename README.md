@@ -11,6 +11,19 @@ linear) e foi **adaptado** para cobrir toda a ementa de séries temporais — da
 > (48 slides), gerada a partir das figuras e dos números produzidos pelos
 > scripts em [`src/`](src/).
 
+> **Versão PITCH (nova):** para uma apresentação curta e trivial de explicar
+> (vender o problema → dados em escala *big data* → **LazyPredict** como a
+> "mágica" que acha o melhor modelo), veja:
+> - [`slides/pitch_lazypredict.html`](slides/pitch_lazypredict.html) — 10 slides
+>   em HTML (abre no navegador, `F11` para tela cheia, `←`/`→` para navegar);
+> - [`slides/pitch_lazypredict.tex`](slides/pitch_lazypredict.tex) — mesma
+>   apresentação em Beamer/LaTeX.
+>
+> Ambas saem de [`src/lazy_predict_forecast.py`](src/lazy_predict_forecast.py),
+> que transforma a série numa tabela e deixa o **LazyPredict** ranquear ~40
+> modelos. Melhor resultado: **BaggingRegressor, RMSE 593** (na mesma janela de
+> nov/2021), empatando com o SARIMA feito à mão (567) e batendo ARIMA/SES/Holt.
+
 ---
 
 ## Cobertura da ementa

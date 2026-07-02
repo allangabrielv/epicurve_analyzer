@@ -6,6 +6,7 @@ matplotlib>=3.4
 seaborn>=0.12
 statsmodels>=0.14
 scikit-learn>=1.0
+lazypredict>=0.3        # pitch: testa dezenas de modelos automaticamente
 
 # Instale com:  pip install -r requirements.txt
 #
