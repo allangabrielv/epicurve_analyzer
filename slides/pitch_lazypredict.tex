@@ -1,6 +1,7 @@
 %=======================================================================
-%  EpiCurve Analyzer — PITCH (versão trivial, estilo apresentação-relâmpago)
-%  Vender o problema -> os dados (big data) -> a mágica (LazyPredict)
+%  EpiCurve Analyzer — Seminário de Séries Temporais (versão enxuta p/ pitch)
+%  Análise clássica (decomposição, estacionariedade, ACF/PACF, Holt-Winters,
+%  SARIMA) + alternativa automática (LazyPredict). Espelha o notebook Colab.
 %
 %  Compilar:  pdflatex -output-directory=slides slides/pitch_lazypredict.tex
 %  Requer LaTeX (MiKTeX/TeX Live) com: beamer, inconsolata, tcolorbox, tikz.
@@ -27,6 +28,7 @@
 \definecolor{pitchred}{HTML}{C81E1E}
 \definecolor{emph}{HTML}{FF5C5C}
 \definecolor{verde}{HTML}{43D17A}
+\definecolor{roxo}{HTML}{9B7BE0}
 \definecolor{pill}{HTML}{C9C9C9}
 \definecolor{clight}{HTML}{D7D7D7}
 
@@ -35,42 +37,38 @@
 \setbeamercolor{frametitle}{fg=white}
 \setbeamercolor{itemize item}{fg=pitchred}
 \setbeamercolor{itemize subitem}{fg=pitchred}
+\setbeamercolor{enumerate item}{fg=pitchred}
 \setbeamerfont{frametitle}{series=\bfseries}
 \setbeamertemplate{itemize item}{\small\raisebox{0.15ex}{\color{pitchred}$\blacktriangleright$}}
 \setbeamertemplate{itemize subitem}{\color{pitchred}\textbullet}
 
-%--------------------------- Fundo (vírus) ------------------------------
 \setbeamertemplate{background}{%
   \includegraphics[width=\paperwidth,height=\paperheight]{fundo_virus.png}%
 }
-
-%------------------------- Título das frames ----------------------------
 \setbeamertemplate{frametitle}{%
-  \vspace*{0.55em}\leavevmode%
+  \vspace*{0.5em}\leavevmode%
   \hbox{\hspace*{0.35em}%
     \tikz{\node[fill=pill,rounded corners=2.5pt,inner sep=0pt,
                 minimum width=17pt,minimum height=9pt]{};}%
     \hspace{0.5em}{\ttfamily\bfseries\insertframetitle}}\par
-  \vspace*{0.18em}\hspace*{0.35em}{\color{pitchred}\rule{0.955\paperwidth}{1.3pt}}%
+  \vspace*{0.16em}\hspace*{0.35em}{\color{pitchred}\rule{0.955\paperwidth}{1.3pt}}%
 }
-
-%------------------------------ Rodapé ----------------------------------
 \setbeamertemplate{footline}{%
-  \hfill{\ttfamily\tiny\color{clight}\insertframenumber\hspace*{1.2em}}\vspace*{0.4em}%
+  \hfill{\ttfamily\tiny\color{clight}\insertframenumber/14\hspace*{1.2em}}\vspace*{0.4em}%
 }
 
 %--------------------------- Estilos tcolorbox --------------------------
 \tcbset{
   pitchbox/.style={enhanced, colback=white, opacityback=0.10,
     colframe=white, opacityframe=0.30, boxrule=0.6pt, arc=3.2mm,
-    coltext=white, left=3mm, right=3mm, top=1.8mm, bottom=1.8mm},
+    coltext=white, left=3mm, right=3mm, top=1.6mm, bottom=1.6mm},
   alertbox/.style={enhanced, colback=pitchred, opacityback=0.16,
     colframe=pitchred, boxrule=1pt, arc=3.2mm, coltext=white,
-    left=3mm, right=3mm, top=1.6mm, bottom=1.6mm},
+    left=3mm, right=3mm, top=1.4mm, bottom=1.4mm},
   goodbox/.style={enhanced, colback=verde, opacityback=0.16,
     colframe=verde, boxrule=1pt, arc=3.2mm, coltext=white,
-    left=3mm, right=3mm, top=1.6mm, bottom=1.6mm},
-  figbox/.style={enhanced, colback=white, colframe=pitchred, boxrule=1.8pt,
+    left=3mm, right=3mm, top=1.4mm, bottom=1.4mm},
+  figbox/.style={enhanced, colback=white, colframe=pitchred, boxrule=1.6pt,
     arc=2mm, left=1mm, right=1mm, top=1mm, bottom=1mm},
   figdark/.style={enhanced, colback=black, colframe=white, opacityframe=0.15,
     boxrule=0.8pt, arc=2mm, left=1mm, right=1mm, top=1mm, bottom=1mm},
@@ -80,8 +78,10 @@
 \newcommand{\dest}[1]{\textcolor{emph}{\textbf{#1}}}
 \newcommand{\bom}[1]{\textcolor{verde}{\textbf{#1}}}
 \newcommand{\figura}[2][\linewidth]{\begin{tcolorbox}[figbox]\centering\includegraphics[width=#1]{#2}\end{tcolorbox}}
+\newcommand{\figalt}[2]{\begin{tcolorbox}[figbox]\centering\includegraphics[height=#1]{#2}\end{tcolorbox}}
 \newcommand{\figdk}[2][\linewidth]{\begin{tcolorbox}[figdark]\centering\includegraphics[width=#1]{#2}\end{tcolorbox}}
-\newcommand{\numgrande}[2]{{\ttfamily\bfseries\fontsize{30}{32}\selectfont #1}\\[0.15em]{\scriptsize\color{clight} #2}}
+\newcommand{\numgrande}[2]{{\ttfamily\bfseries\fontsize{28}{30}\selectfont #1}\\[0.12em]{\scriptsize\color{clight} #2}}
+\newcommand{\colab}{{\raggedleft\scriptsize\ttfamily\color{verde}$\blacktriangleright$~ao vivo no Colab\par}\vspace{-0.2em}}
 
 \begin{document}
 
@@ -89,32 +89,32 @@
 \begin{frame}[plain]
   \vfill
   \begin{center}
-    {\scriptsize\ttfamily\color{clight} SEMINÁRIO · SÉRIES TEMPORAIS · UFPB}\\[0.8em]
+    {\scriptsize\ttfamily\color{clight} SEMINÁRIO · SÉRIES TEMPORAIS · UFPB}\\[0.7em]
     \begin{tcolorbox}[enhanced,colback=white,opacityback=0.10,colframe=white,
-        opacityframe=0.32,arc=6mm,width=0.80\paperwidth,halign=center,top=6mm,bottom=6mm,center]
-      {\ttfamily\bfseries\fontsize{34}{38}\selectfont EpiCurve Analyzer}
+        opacityframe=0.32,arc=6mm,width=0.86\paperwidth,halign=center,top=5mm,bottom=5mm,center]
+      {\ttfamily\bfseries\fontsize{30}{34}\selectfont Predição de curvas epidêmicas}
     \end{tcolorbox}
-    \vspace{0.7em}
-    {\large Prever a próxima onda da COVID-19 — \dest{sem deduzir uma única fórmula}.}\\[0.9em]
-    \begin{tcolorbox}[alertbox,width=0.30\paperwidth,halign=center,valign=center]
-      {\ttfamily\small powered by LazyPredict}
+    \vspace{0.6em}
+    {\normalsize COVID-19 em SP: da análise clássica (\bom{decomposição, ACF/PACF, SARIMA})
+     à modelagem automática com \dest{LazyPredict}.}\\[0.8em]
+    \begin{tcolorbox}[alertbox,width=0.5\paperwidth,halign=center,valign=center]
+      {\ttfamily\small séries temporais · análise no Colab · LazyPredict}
     \end{tcolorbox}
   \end{center}
   \vfill
   {\centering\color{clight}{\footnotesize\ttfamily Allan Vasconcelos · UFPB · 2026}\par}
-  \vspace{0.6em}
+  \vspace{0.5em}
 \end{frame}
 
 %========================= 2 · O PROBLEMA ===============================
 \begin{frame}{o problema}
-  \vspace{0.4em}
+  \vspace{0.3em}
   {\Large Quantos casos teremos nas \dest{próximas 4 semanas}?}
-  \vspace{0.8em}
+  \vspace{0.7em}
 
-  Essa única resposta decide \dest{leitos de UTI}, oxigênio, insumos e escala de
-  equipes. Prever cedo é \bom{se preparar}; errar é hospital lotado — ou recurso
-  caríssimo jogado fora.
-  \vspace{0.9em}
+  Essa resposta decide \dest{leitos de UTI}, oxigênio, insumos e escala de equipes.
+  Prever cedo é \bom{se preparar}; errar é hospital lotado — ou recurso caríssimo jogado fora.
+  \vspace{0.8em}
   \begin{columns}[c]
     \column{0.24\textwidth}\begin{tcolorbox}[pitchbox,halign=center]\footnotesize UTI \& leitos\end{tcolorbox}
     \column{0.24\textwidth}\begin{tcolorbox}[pitchbox,halign=center]\footnotesize oxigênio \& insumos\end{tcolorbox}
@@ -123,13 +123,13 @@
   \end{columns}
 \end{frame}
 
-%========================= 3 · A ESCALA =================================
+%========================= 3 · A CURVA =================================
 \begin{frame}{a curva que precisamos prever}
   \begin{columns}[c]
     \column{0.28\textwidth}
       \begin{tcolorbox}[pitchbox]
-        \numgrande{\textcolor{emph}{5,23 mi}}{casos confirmados}\\[0.7em]
-        \numgrande{167 mil}{óbitos}\\[0.7em]
+        \numgrande{\textcolor{emph}{5,23 mi}}{casos confirmados}\\[0.6em]
+        \numgrande{167 mil}{óbitos}\\[0.6em]
         \numgrande{\textcolor{emph}{37.611}}{pico em 1 dia}
       \end{tcolorbox}
     \column{0.72\textwidth}
@@ -142,115 +142,171 @@
 
 %========================= 4 · OS DADOS =================================
 \begin{frame}{os dados · escala big data}
-  \vspace{0.3em}
+  \vspace{0.2em}
   {\Large \dest{3,85 milhões} de registros brutos.}
-  \vspace{0.9em}
+  \vspace{0.8em}
   \begin{columns}[c]
     \column{0.25\textwidth}\begin{tcolorbox}[pitchbox,halign=center]\numgrande{18}{colunas}\end{tcolorbox}
     \column{0.25\textwidth}\begin{tcolorbox}[pitchbox,halign=center]\numgrande{5.570}{municípios BR}\end{tcolorbox}
-    \column{0.25\textwidth}\begin{tcolorbox}[pitchbox,halign=center]\numgrande{762}{dias (SP)}\end{tcolorbox}
     \column{0.25\textwidth}\begin{tcolorbox}[pitchbox,halign=center]\numgrande{92 MB}{comprimido}\end{tcolorbox}
+    \column{0.25\textwidth}\begin{tcolorbox}[pitchbox,halign=center]\numgrande{\textcolor{emph}{762}}{dias (SP)}\end{tcolorbox}
   \end{columns}
-  \vspace{0.9em}
-  Fonte oficial \dest{DataSUS / Brasil.IO} (25/02/2020 a 27/03/2022). Filtramos SP e
-  agregamos por dia: \bom{uma série diária limpa de 762 pontos} — a matéria-prima da previsão.
+  \vspace{0.8em}
+  Fonte oficial \dest{DataSUS / Brasil.IO} (25/02/2020 a 27/03/2022). A matéria-prima
+  é grande; o desafio é \bom{tratá-la} até virar uma série diária utilizável.
 \end{frame}
 
-%========================= 5 · O DADO É SUJO ============================
-\begin{frame}{o dado é sujo}
-  \begin{columns}[c]
-    \column{0.46\textwidth}
-      {\large Fim de semana quase não testa.}\\[0.6em]
-      A curva \dest{serrilha toda semana}: domingo registra metade da média; quinta,
-      quase 40\% acima. Não é a epidemia mudando — é o \emph{cartório} (subnotificação).
-      \vspace{0.7em}
-      \begin{tcolorbox}[alertbox]\footnotesize
-        domingo $\approx 0{,}49\times$ \quad|\quad quinta $\approx 1{,}38\times$ a média
-      \end{tcolorbox}
-    \column{0.54\textwidth}
-      \figura{03_efeito_dia_semana.png}
-  \end{columns}
-  \centering\footnotesize\color{clight}
-  Esse padrão semanal é justamente o que um bom modelo precisa capturar.
-\end{frame}
-
-%========================= 6 · O CAMINHO DIFÍCIL ========================
-\begin{frame}{o caminho difícil}
+%========================= 5 · TRATAMENTO ==============================
+\begin{frame}{tratamento dos dados}
+  \colab
+  \begin{enumerate}
+    \item Ler só \dest{6 de 18 colunas} — eficiência de memória com dado grande.
+    \item Filtrar o \dest{nível estadual de SP} (já é a soma diária de todos os municípios).
+    \item Garantir \dest{frequência diária contínua} (sem buracos no calendário).
+    \item \dest{Zerar valores negativos} das correções retroativas do governo.
+    \item Converter tipos e ordenar $\rightarrow$ \bom{série diária de 762 dias}.
+  \end{enumerate}
   \vspace{0.3em}
-  {\Large O jeito clássico: \dest{SARIMA}.}
-  \begin{center}
-  \begin{tcolorbox}[enhanced,colback=black,opacityback=0.5,colframe=pitchred,
-      boxrule=1pt,arc=2mm,coltext=white,width=0.9\linewidth,halign=center,top=3mm,bottom=3mm]
-    $\displaystyle \Phi_P(B^s)\,\phi_p(B)\,(1-B)^d(1-B^s)^D\,y_t=\Theta_Q(B^s)\,\theta_q(B)\,\varepsilon_t$
+  \begin{tcolorbox}[pitchbox]
+    \footnotesize \textbf{Honestidade:} para SP a série já vinha íntegra —
+    \bom{0 datas faltando e 0 negativos}. As travas existem (código robusto para qualquer
+    estado), mas nada precisou ser corrigido.
   \end{tcolorbox}
-  \end{center}
-  Semanas escolhendo estacionariedade, lendo ACF/PACF e caçando $(p,d,q)(P,D,Q)$…
-  \emph{Eu não vi quase nada disso — e não quero deduzir na mão.}
-  \vspace{0.6em}
-  \begin{center}{\Large E se a \bom{máquina} escolhesse o modelo por mim?}\end{center}
 \end{frame}
 
-%========================= 7 · O TRUQUE =================================
-\begin{frame}{o truque: série $\rightarrow$ tabela}
-  Toda série temporal vira uma \dest{tabela comum}: para prever \bom{hoje}, uso como
-  pistas o passado dela mesma.
-  \vspace{0.3em}
-  \figdk[0.92\linewidth]{lazy_00_tabela.png}
+%========================= 6 · DISTRIBUIÇÃO ============================
+\begin{frame}{distribuição dos dados}
+  \colab
+  \figdk[0.84\linewidth]{slide_distribuicao.png}
+  \centering\footnotesize\color{clight}
+  A distribuição dos casos é \dest{muito assimétrica} (muitos dias baixos, poucos picos).
+  Em \bom{escala log} ela se equilibra — por isso modelamos em log(1+casos).
+\end{frame}
+
+%========================= 7 · SAZONALIDADE ============================
+\begin{frame}{sazonalidade semanal · o dado é sujo}
+  \colab
+  \begin{columns}[c]
+    \column{0.44\textwidth}
+      {\large Fim de semana quase não testa.}\\[0.5em]
+      \footnotesize A curva \dest{serrilha toda semana}: domingo registra metade da média;
+      quinta, quase 40\% acima. Não é a epidemia — é o \emph{cartório}, criando
+      \dest{sazonalidade de período 7}.
+      \vspace{0.5em}
+      \begin{tcolorbox}[alertbox]\footnotesize
+        domingo $\approx 0{,}49\times$ \quad|\quad quinta $\approx 1{,}38\times$
+      \end{tcolorbox}
+    \column{0.56\textwidth}
+      \figdk{slide_dia_semana.png}
+  \end{columns}
+\end{frame}
+
+%========================= 8 · ANÁLISE DE SÉRIE TEMPORAL ===============
+\begin{frame}{análise de série temporal}
+  \colab
+  \begin{columns}[c]
+    \column{0.56\textwidth}
+      \figura{04_decomposicao.png}
+    \column{0.44\textwidth}
+      \footnotesize
+      \textbf{Decomposição:} série (log) = \bom{tendência} (as ondas) + \dest{sazonalidade
+      semanal} + resíduo.
+      \vspace{0.5em}
+
+      \textbf{Estacionariedade (ADF/KPSS):} em nível divergem; após \dest{1 diferença}
+      estaciona $\Rightarrow d=1$.
+      \vspace{0.5em}
+
+      \textbf{ACF/PACF:} picos em \dest{7, 14, 21} confirmam o ciclo semanal
+      $\Rightarrow$ pede \bom{SARIMA}.
+  \end{columns}
+\end{frame}
+
+%========================= 9 · TREINO / TESTE ==========================
+\begin{frame}{treino + teste (no tempo)}
+  \colab
+  \figdk[0.90\linewidth]{slide_treino_teste.png}
+  \centering\footnotesize\color{clight}
+  Treino = tudo até \bom{31/10/2021} (601 dias); teste = os \dest{28 dias seguintes}
+  (nov/2021). O teste vem \dest{sempre depois} do treino (senão é vazamento).
+  \textbf{Todos} os modelos usam esta mesma divisão.
+\end{frame}
+
+%========================= 10 · MODELOS CLÁSSICOS ======================
+\begin{frame}{modelos clássicos de série temporal}
+  \colab
+  \begin{columns}[c]
+    \column{0.60\textwidth}
+      \figura{10_arima_sarima_previsao.png}
+    \column{0.40\textwidth}
+      \footnotesize \bom{Holt-Winters} e \dest{SARIMA} aprendem o ciclo de 7 dias e
+      reproduzem o zigue-zague; o \dest{ARIMA} prevê quase uma linha plana.
+      \vspace{0.4em}
+      \begin{tcolorbox}[pitchbox]
+        \footnotesize
+        \begin{tabular}{lr}
+          \textbf{Modelo} & \textbf{RMSE}\\[0.2em]
+          \bom{Holt-Winters} & \bom{498}\\
+          SARIMA & 567\\
+          Naïve sazonal & 652\\
+          ARIMA & 714\\
+        \end{tabular}
+      \end{tcolorbox}
+  \end{columns}
+  \centering\scriptsize\color{clight} A sazonalidade é o que mais reduz o erro.
+\end{frame}
+
+%========================= 11 · SÉRIE -> TABELA ========================
+\begin{frame}{alternativa automática: série $\rightarrow$ tabela}
+  \colab
+  E se a máquina escolhesse o modelo? Primeiro viramos a série numa \dest{tabela}:
+  para prever \bom{hoje}, as pistas são o passado dela.
+  \vspace{0.2em}
+  \figdk[0.88\linewidth]{lazy_00_tabela.png}
   \centering\footnotesize\color{clight}
   Pistas: ontem, 7 dias atrás, média da semana, dia da semana $\rightarrow$ casos de hoje.
-  Vira \dest{748 linhas $\times$ 15 pistas} — um problema de ML qualquer.
+  Vira \dest{748 linhas $\times$ 15 pistas}. Sem “colar”: toda pista usa só o passado.
 \end{frame}
 
-%========================= 8 · A MÁGICA =================================
-\begin{frame}[fragile]{a mágica: uma linha}
+%========================= 12 · LAZYPREDICT ============================
+\begin{frame}[fragile]{a mágica: LazyPredict}
+  \colab
   \begin{tcolorbox}[enhanced,colback=black,opacityback=0.55,colframe=pitchred,
        boxrule=1pt,arc=2mm,coltext=white,fontupper=\ttfamily\footnotesize]
 \begin{verbatim}
-# o professor sugeriu isto:
+# ferramenta sugerida pelo professor:
 from lazypredict.Supervised import LazyRegressor
 modelos, _ = LazyRegressor().fit(X_tr, X_te, y_tr, y_te)
 \end{verbatim}
   \end{tcolorbox}
   \begin{columns}[c]
     \column{0.40\textwidth}
-      {\large \dest{39 modelos} treinados e ranqueados sozinhos.}\\[0.4em]
+      {\large \dest{39 modelos} treinados e ranqueados sozinhos.}\\[0.3em]
       {\color{clight} Em segundos, sem escolher nada à mão.}
     \column{0.60\textwidth}
       \figdk{lazy_01_leaderboard.png}
   \end{columns}
 \end{frame}
 
-%========================= 9 · O RESULTADO =============================
-\begin{frame}{o resultado}
-  \begin{columns}[c]
-    \column{0.44\textwidth}
-      \begin{tcolorbox}[goodbox]
-        {\ttfamily\bfseries\Large BaggingRegressor}\\[0.2em]
-        {\footnotesize vencedor escolhido pelo LazyPredict}
-      \end{tcolorbox}
-      \vspace{0.4em}
-      \begin{tcolorbox}[pitchbox]
-        \numgrande{\textcolor{verde}{593}}{RMSE (erro)} \hfill \numgrande{448}{MAE}
-      \end{tcolorbox}
-      \vspace{0.3em}
-      \footnotesize Sem deduzir nada, \bom{empatou com o SARIMA} feito à mão (567) e
-      \dest{ganhou} de ARIMA (714), SES (725) e Holt (709).
-    \column{0.56\textwidth}
-      \figdk{lazy_02_previsao.png}
-  \end{columns}
-  \centering\scriptsize\color{clight}
-  Dado ruidoso: o acerto dia-a-dia é modesto. A mágica acha o candidato; o humano refina.
+%========================= 13 · COMPARAÇÃO =============================
+\begin{frame}{comparação geral}
+  \colab
+  \figdk[0.82\linewidth]{slide_comparacao.png}
+  \centering\footnotesize\color{clight}
+  Na mesma janela, o \bom{Holt-Winters} (sazonal, à mão) vence; o
+  \textcolor{roxo}{\textbf{LazyPredict}} (593) chega competitivo com \dest{uma linha}.
+  Nota: LazyPredict é avaliado um-passo-à-frente — tarefa mais fácil que os 28 dias dos clássicos.
 \end{frame}
 
-%========================= 10 · FECHO ==================================
-\begin{frame}{resumo do pitch}
+%========================= 14 · CONCLUSÕES ============================
+\begin{frame}{conclusões}
   \begin{enumerate}
-    \item \dest{O problema se vende sozinho.} Prever a onda com 4 semanas de
-          antecedência significa leitos, oxigênio e vidas.
-    \item \dest{Big data real.} 3,85 milhões de registros do DataSUS viram uma série
-          diária limpa de São Paulo.
-    \item \dest{LazyPredict é o atalho.} Uma linha, 39 modelos testados, e o melhor
-          competindo de igual com o SARIMA — \emph{sem matemática pesada}.
+    \item \dest{É um problema de série temporal.} Decomposição, ADF/KPSS e ACF/PACF
+          revelaram a sazonalidade semanal (período 7) da notificação.
+    \item \dest{Quem capta a sazonalidade vence.} Holt-Winters e SARIMA batem folgado o
+          ARIMA (linha plana) e o naïve.
+    \item \dest{LazyPredict é o atalho.} Em uma linha, testou dezenas de modelos e chegou
+          perto dos clássicos. Automatizar acha o candidato; \emph{conhecer a série} dá o melhor resultado.
   \end{enumerate}
   \vfill
   \begin{center}
