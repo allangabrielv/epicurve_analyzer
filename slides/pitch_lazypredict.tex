@@ -81,7 +81,6 @@
 \newcommand{\figalt}[2]{\begin{tcolorbox}[figbox]\centering\includegraphics[height=#1]{#2}\end{tcolorbox}}
 \newcommand{\figdk}[2][\linewidth]{\begin{tcolorbox}[figdark]\centering\includegraphics[width=#1]{#2}\end{tcolorbox}}
 \newcommand{\numgrande}[2]{{\ttfamily\bfseries\fontsize{28}{30}\selectfont #1}\\[0.12em]{\scriptsize\color{clight} #2}}
-\newcommand{\colab}{{\raggedleft\scriptsize\ttfamily\color{verde}$\blacktriangleright$~ao vivo no Colab\par}\vspace{-0.2em}}
 
 \begin{document}
 
@@ -158,7 +157,6 @@
 
 %========================= 5 · TRATAMENTO ==============================
 \begin{frame}{tratamento dos dados}
-  \colab
   \begin{enumerate}
     \item Ler só \dest{6 de 18 colunas} — eficiência de memória com dado grande.
     \item Filtrar o \dest{nível estadual de SP} (já é a soma diária de todos os municípios).
@@ -176,7 +174,6 @@
 
 %========================= 6 · DISTRIBUIÇÃO ============================
 \begin{frame}{distribuição dos dados}
-  \colab
   \figdk[0.84\linewidth]{slide_distribuicao.png}
   \centering\footnotesize\color{clight}
   A distribuição dos casos é \dest{muito assimétrica} (muitos dias baixos, poucos picos).
@@ -185,7 +182,6 @@
 
 %========================= 7 · SAZONALIDADE ============================
 \begin{frame}{sazonalidade semanal · o dado é sujo}
-  \colab
   \begin{columns}[c]
     \column{0.44\textwidth}
       {\large Fim de semana quase não testa.}\\[0.5em]
@@ -203,7 +199,6 @@
 
 %========================= 8 · ANÁLISE DE SÉRIE TEMPORAL ===============
 \begin{frame}{análise de série temporal}
-  \colab
   \begin{columns}[c]
     \column{0.56\textwidth}
       \figura{04_decomposicao.png}
@@ -224,7 +219,6 @@
 
 %========================= 9 · TREINO / TESTE ==========================
 \begin{frame}{treino + teste (no tempo)}
-  \colab
   \figdk[0.90\linewidth]{slide_treino_teste.png}
   \centering\footnotesize\color{clight}
   Treino = tudo até \bom{31/10/2021} (601 dias); teste = os \dest{28 dias seguintes}
@@ -234,7 +228,6 @@
 
 %========================= 10 · MODELOS CLÁSSICOS ======================
 \begin{frame}{modelos clássicos de série temporal}
-  \colab
   \begin{columns}[c]
     \column{0.60\textwidth}
       \figura{10_arima_sarima_previsao.png}
@@ -258,7 +251,6 @@
 
 %========================= 11 · SÉRIE -> TABELA ========================
 \begin{frame}{alternativa automática: série $\rightarrow$ tabela}
-  \colab
   E se a máquina escolhesse o modelo? Primeiro viramos a série numa \dest{tabela}:
   para prever \bom{hoje}, as pistas são o passado dela.
   \vspace{0.2em}
@@ -270,7 +262,6 @@
 
 %========================= 12 · LAZYPREDICT ============================
 \begin{frame}[fragile]{a mágica: LazyPredict}
-  \colab
   \begin{tcolorbox}[enhanced,colback=black,opacityback=0.55,colframe=pitchred,
        boxrule=1pt,arc=2mm,coltext=white,fontupper=\ttfamily\footnotesize]
 \begin{verbatim}
@@ -290,7 +281,6 @@ modelos, _ = LazyRegressor().fit(X_tr, X_te, y_tr, y_te)
 
 %========================= 13 · COMPARAÇÃO =============================
 \begin{frame}{comparação geral}
-  \colab
   \figdk[0.82\linewidth]{slide_comparacao.png}
   \centering\footnotesize\color{clight}
   Na mesma janela, o \bom{Holt-Winters} (sazonal, à mão) vence; o

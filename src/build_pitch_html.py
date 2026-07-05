@@ -5,7 +5,7 @@ embutidas em base64 — arquivo 100% autossuficiente.
 
 É um deck de SÉRIES TEMPORAIS: além do LazyPredict (sugestão do professor), cobre
 a análise clássica (decomposição, estacionariedade, ACF/PACF, Holt-Winters,
-SARIMA). Os slides marcados com "ao vivo no Colab" são demonstrados no notebook
+SARIMA). Toda a análise é demonstrada ao vivo no notebook
 notebooks/predicao_curvas_epidemicas.ipynb.
 
 Uso:  py src/build_pitch_html.py   ->   slides/pitch_lazypredict.html
@@ -68,9 +68,6 @@ body {{ margin:0; background:var(--bg); color:var(--ink); font-family:var(--sans
 .pill {{ width:26px; height:12px; border-radius:6px; background:var(--red); flex:none; }}
 .ftitle {{ font-family:var(--mono); font-weight:700; font-size:1.02rem;
           text-transform:lowercase; letter-spacing:.02em; color:#fff; margin:0; }}
-.demo {{ margin-left:auto; font-family:var(--mono); font-size:.72rem; color:var(--green);
-        border:1px solid rgba(67,209,122,.5); border-radius:999px; padding:.2rem .7rem;
-        letter-spacing:.03em; white-space:nowrap; }}
 .rule {{ height:2px; background:var(--red); border-radius:2px; margin:.5rem 0 1.4rem; width:100%; }}
 h1.big {{ font-size:clamp(2.1rem,5vw,3.8rem); line-height:1.04; margin:.2rem 0 1rem;
          font-weight:800; letter-spacing:-.02em; text-wrap:balance; }}
@@ -156,7 +153,7 @@ ol.pts li::before {{ counter-increment:p; content:counter(p); position:absolute;
     <h1 class="big">Predição de<br>curvas epidêmicas</h1>
     <p class="lead">COVID-19 em São Paulo: da análise clássica de séries temporais
       (<span class="good">decomposição, ACF/PACF, SARIMA</span>) à modelagem automática
-      com <span class="em">LazyPredict</span> — tudo <span class="em">ao vivo no Colab</span>.</p>
+      com <span class="em">LazyPredict</span>.</p>
     <div class="chips"><span class="chip">séries temporais</span><span class="chip">análise no Colab</span><span class="chip">LazyPredict</span></div>
     <p class="author"><b>Allan Vasconcelos</b> · UFPB · 2026</p>
     <p class="hint">use <b>←</b> <b>→</b> ou role a página para navegar</p>
@@ -204,7 +201,7 @@ ol.pts li::before {{ counter-increment:p; content:counter(p); position:absolute;
 
   <!-- 5 TRATAMENTO -->
   <section class="slide" id="s5"><div class="slide-inner">
-    <div class="head"><span class="pill"></span><p class="ftitle">tratamento dos dados</p><span class="demo">▸ ao vivo no Colab</span></div>
+    <div class="head"><span class="pill"></span><p class="ftitle">tratamento dos dados</p></div>
     <div class="rule"></div>
     <ol class="steps">
       <li><span class="n">1</span><span>Ler só <b>6 de 18 colunas</b> — eficiência de memória com dado grande.</span></li>
@@ -220,7 +217,7 @@ ol.pts li::before {{ counter-increment:p; content:counter(p); position:absolute;
 
   <!-- 6 DISTRIBUIÇÃO -->
   <section class="slide" id="s6"><div class="slide-inner">
-    <div class="head"><span class="pill"></span><p class="ftitle">distribuição dos dados</p><span class="demo">▸ ao vivo no Colab</span></div>
+    <div class="head"><span class="pill"></span><p class="ftitle">distribuição dos dados</p></div>
     <div class="rule"></div>
     <div class="figdark"><img src="{IMG['dist']}" alt="Distribuição dos casos diários, escala real e log"></div>
     <p class="cap">A distribuição dos casos é <span class="em">muito assimétrica</span>
@@ -230,7 +227,7 @@ ol.pts li::before {{ counter-increment:p; content:counter(p); position:absolute;
 
   <!-- 7 SAZONALIDADE -->
   <section class="slide" id="s7"><div class="slide-inner">
-    <div class="head"><span class="pill"></span><p class="ftitle">sazonalidade semanal · o dado é sujo</p><span class="demo">▸ ao vivo no Colab</span></div>
+    <div class="head"><span class="pill"></span><p class="ftitle">sazonalidade semanal · o dado é sujo</p></div>
     <div class="rule"></div>
     <div class="grid2 wide">
       <div>
@@ -246,7 +243,7 @@ ol.pts li::before {{ counter-increment:p; content:counter(p); position:absolute;
 
   <!-- 8 ANÁLISE DE SÉRIE TEMPORAL -->
   <section class="slide" id="s8"><div class="slide-inner">
-    <div class="head"><span class="pill"></span><p class="ftitle">análise de série temporal</p><span class="demo">▸ ao vivo no Colab</span></div>
+    <div class="head"><span class="pill"></span><p class="ftitle">análise de série temporal</p></div>
     <div class="rule"></div>
     <div class="grid2 wide">
       <div class="figcard tall"><img src="{IMG['decomp']}" alt="Decomposição da série em tendência, sazonalidade e resíduo"></div>
@@ -263,7 +260,7 @@ ol.pts li::before {{ counter-increment:p; content:counter(p); position:absolute;
 
   <!-- 9 TREINO/TESTE -->
   <section class="slide" id="s9"><div class="slide-inner">
-    <div class="head"><span class="pill"></span><p class="ftitle">treino + teste (no tempo)</p><span class="demo">▸ ao vivo no Colab</span></div>
+    <div class="head"><span class="pill"></span><p class="ftitle">treino + teste (no tempo)</p></div>
     <div class="rule"></div>
     <div class="figdark"><img src="{IMG['split']}" alt="Separação treino e teste no tempo"></div>
     <p class="cap">Treino = tudo até <span class="good">31/10/2021</span> ({lz['n_treino']} dias);
@@ -274,7 +271,7 @@ ol.pts li::before {{ counter-increment:p; content:counter(p); position:absolute;
 
   <!-- 10 MODELOS CLÁSSICOS -->
   <section class="slide" id="s10"><div class="slide-inner">
-    <div class="head"><span class="pill"></span><p class="ftitle">modelos clássicos de série temporal</p><span class="demo">▸ ao vivo no Colab</span></div>
+    <div class="head"><span class="pill"></span><p class="ftitle">modelos clássicos de série temporal</p></div>
     <div class="rule"></div>
     <div class="grid2 wide">
       <div class="figcard"><img src="{IMG['classicos']}" alt="Previsão de 28 dias: ARIMA plano vs SARIMA sazonal"></div>
@@ -295,7 +292,7 @@ ol.pts li::before {{ counter-increment:p; content:counter(p); position:absolute;
 
   <!-- 11 SÉRIE -> TABELA -->
   <section class="slide" id="s11"><div class="slide-inner">
-    <div class="head"><span class="pill"></span><p class="ftitle">alternativa automática: série → tabela</p><span class="demo">▸ ao vivo no Colab</span></div>
+    <div class="head"><span class="pill"></span><p class="ftitle">alternativa automática: série → tabela</p></div>
     <div class="rule"></div>
     <p class="lead">E se a máquina escolhesse o modelo? Primeiro viramos a série numa
       <span class="em">tabela</span>: para prever <span class="good">hoje</span>, as pistas são o passado dela.</p>
@@ -306,7 +303,7 @@ ol.pts li::before {{ counter-increment:p; content:counter(p); position:absolute;
 
   <!-- 12 LAZYPREDICT -->
   <section class="slide" id="s12"><div class="slide-inner">
-    <div class="head"><span class="pill"></span><p class="ftitle">a mágica: LazyPredict</p><span class="demo">▸ ao vivo no Colab</span></div>
+    <div class="head"><span class="pill"></span><p class="ftitle">a mágica: LazyPredict</p></div>
     <div class="rule"></div>
     <div class="codebox">
 <span class="c"># ferramenta sugerida pelo professor:</span><br>
@@ -319,7 +316,7 @@ modelos, _ = LazyRegressor().<span class="k">fit</span>(X_tr, X_te, y_tr, y_te)
 
   <!-- 13 COMPARAÇÃO -->
   <section class="slide" id="s13"><div class="slide-inner">
-    <div class="head"><span class="pill"></span><p class="ftitle">comparação geral</p><span class="demo">▸ ao vivo no Colab</span></div>
+    <div class="head"><span class="pill"></span><p class="ftitle">comparação geral</p></div>
     <div class="rule"></div>
     <div class="figdark"><img src="{IMG['comp']}" alt="Comparação de RMSE: modelos clássicos e LazyPredict"></div>
     <p class="cap">Na mesma janela: o <span class="good">Holt-Winters</span> (sazonal, feito à mão)
