@@ -1,6 +1,5 @@
 \frametitle{a mágica: LazyPredict}
-\colab
-  \begin{tcolorbox}[enhanced,colback=black,opacityback=0.55,colframe=pitchred,
+\begin{tcolorbox}[enhanced,colback=black,opacityback=0.55,colframe=pitchred,
        boxrule=1pt,arc=2mm,coltext=white,fontupper=\ttfamily\footnotesize]
 \begin{verbatim}
 # ferramenta sugerida pelo professor:
